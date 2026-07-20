@@ -1,0 +1,5 @@
+# Folder ini digunakan untuk meletakkan file model IndoBERT Anda.
+# Silakan letakkan file-file berikut di folder ini:
+# - pytorch_model.bin (atau model.safetensors)
+# - config.json
+# - vocab.txt / special_tokens_map.json / tokenizer_config.json / tokenizer.json (jika ada)

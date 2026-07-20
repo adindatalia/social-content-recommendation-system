@@ -1,0 +1,38 @@
+# =========================
+# Python
+# =========================
+backend/venv/
+venv/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Environment
+backend/.env
+.env
+.env.*
+
+# =========================
+# ML Model
+# =========================
+backend/app/ml_models/indobert/model.safetensors
+backend/app/ml_models/indobert/training_args.bin
+backend/app/ml_models/indobert/pytorch_model.bin
+
+# Dataset
+backend/data/*.csv
+
+# =========================
+# Next.js
+# =========================
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
