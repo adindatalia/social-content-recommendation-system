@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import type {AnalysisResult, GenerationResult, HistoryItem, Notification } from "@/lib/types";
 import { INITIAL_HISTORY } from "@/lib/mockData";
 
@@ -167,6 +167,31 @@ export function useContentGenerator() {
     setAnalysisResult(null);
     setKeyword("");
   };
+
+  // ── Muat keyword/angle dari query param (?keyword=&angle=) ──
+  // Dipakai oleh tombol "Analisis Ulang" di halaman History untuk
+  // membawa user kembali ke Dashboard dan langsung menjalankan generate.
+  // Client-side only (window.location) supaya tidak butuh Suspense
+  // boundary dan tidak mengubah struktur app/page.tsx.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qKeyword = params.get("keyword");
+    const qAngle = params.get("angle");
+
+    if (!qKeyword) return;
+
+    setKeyword(qKeyword);
+    if (qAngle) setSelectedAngle(qAngle);
+
+    // Bersihkan query string dari address bar setelah dibaca
+    window.history.replaceState({}, "", window.location.pathname);
+
+    // Jalankan generate otomatis dengan keyword dari history
+    setTimeout(() => {
+      handleGenerate();
+    }, 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     selectedAngle,

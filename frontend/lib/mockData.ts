@@ -13,6 +13,20 @@ export const INITIAL_HISTORY: HistoryItem[] = [
       angle: "Address Pain Point",
       periode: "7",
       timestamp: "23 Juni 2026, 14:30",
+      analysis: {
+        keyword: "Antrian lama di RS",
+        total_comments: 486,
+        distribution: { Negatif: 68, Netral: 20, Positif: 12 },
+        dominant_phrases: {
+          negative: [
+            { keyword: "antrian lama", count: 45 },
+            { keyword: "menunggu berjam-jam", count: 30 },
+          ],
+          neutral: [{ keyword: "jadwal pendaftaran", count: 15 }],
+          positive: [{ keyword: "petugas ramah", count: 8 }],
+        },
+        recommended_strategy: { key: "address_pain_point", label: "Address Pain Point" },
+      },
       ideas: [
         {
           id: "idea-1-1",
@@ -61,6 +75,20 @@ export const INITIAL_HISTORY: HistoryItem[] = [
       angle: "Edukasi Informatif",
       periode: "14",
       timestamp: "22 Juni 2026, 10:15",
+      analysis: {
+        keyword: "Biaya Scaling",
+        total_comments: 214,
+        distribution: { Negatif: 20, Netral: 55, Positif: 25 },
+        dominant_phrases: {
+          negative: [{ keyword: "gigi ngilu", count: 12 }],
+          neutral: [
+            { keyword: "biaya scaling gigi", count: 38 },
+            { keyword: "prosedur scaling", count: 22 },
+          ],
+          positive: [{ keyword: "gigi lebih bersih", count: 18 }],
+        },
+        recommended_strategy: { key: "edukasi_informatif", label: "Edukasi Informatif" },
+      },
       ideas: [
         {
           id: "idea-2-1",
@@ -135,3 +163,10 @@ export const ANGLE_OPTIONS = [
     iconColor: "text-yellow-500 bg-yellow-50 border-yellow-100",
   },
 ];
+
+// ─── Helper warna badge angle (dipakai di HistorySection & halaman /history) ───
+export function angleBadgeStyle(angle: string): string {
+  const found = ANGLE_OPTIONS.find((a) => a.id === angle);
+  if (found) return found.badgeStyle;
+  return "bg-teal-50 border-teal-100 text-teal-700";
+}
