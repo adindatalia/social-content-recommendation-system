@@ -3,6 +3,7 @@
 import { useContentGenerator } from "@/hooks/useContentGenerator";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import InsightSection from "@/components/InsightSection";
 import SearchForm from "@/components/SearchForm";
 import Loading from "@/components/Loading";
 import RecommendationSection from "@/components/RecommendationSection";
@@ -21,6 +22,9 @@ export default function Home() {
       <HeroSection />
 
       <main className="max-w-5xl mx-auto px-6 space-y-20 pb-20">
+
+        {/* 3. Insight publik umum — ringkasan sentimen sebelum user memilih topik spesifik */}
+        <InsightSection />
 
         {/* 4. Generator — pilih strategi, keyword, tombol Generate */}
         <SearchForm

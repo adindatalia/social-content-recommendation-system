@@ -91,16 +91,31 @@ export default function RecommendationSection({
     },
   ];
 
+  // Backend (strategy_service.resolve_strategy) sudah menghitung sentimen
+  // target dari data asli -- pakai itu kalau tersedia. Fallback ke perhitungan
+  // lokal hanya untuk data lama (mis. mock history) yang belum punya field ini.
   const dominant: SentimentLabel =
-    analysis.distribution.Negatif >= analysis.distribution.Netral &&
+    analysis.recommended_strategy.target_sentiment ??
+    (analysis.distribution.Negatif >= analysis.distribution.Netral &&
     analysis.distribution.Negatif >= analysis.distribution.Positif
       ? "Negatif"
       : analysis.distribution.Netral >= analysis.distribution.Positif
       ? "Netral"
-      : "Positif";
+      : "Positif");
 
   const dominantPhrases: PhraseItem[] =
     analysis.dominant_phrases?.[SENTIMENT_TO_PHRASE_KEY[dominant]] ?? [];
+
+  // Alasan strategi: pakai `reasoning` dinamis dari backend (dihitung dari
+  // distribusi & frasa dominan yang sesungguhnya). Fallback ke teks statis
+  // hanya untuk data lama yang belum punya field ini.
+  const strategyReasonText =
+    analysis.recommended_strategy.reasoning?.join(" ") ??
+    STRATEGY_REASON[analysis.recommended_strategy.label] ??
+    STRATEGY_REASON["Address Pain Point"];
+
+  const isSystemRecommended = analysis.recommended_strategy.is_recommended;
+  const systemRecommendedLabel = analysis.recommended_strategy.recommended_label;
 
   const promptId = "prompt";
 
@@ -116,12 +131,9 @@ export default function RecommendationSection({
     .map((p: PhraseItem) => `• ${p.keyword}`)
     .join("\n")}
   Strategi Konten :
-  ${analysis.recommended_strategy?.label}
+  ${analysis.recommended_strategy.label}
   Instruksi :
-  ${
-    STRATEGY_REASON[analysis.recommended_strategy.label] ??
-    STRATEGY_REASON["Address Pain Point"]
-  }
+  ${strategyReasonText}
   Output yang diminta :
   1. Berikan 3 ide konten.
   2. Setiap ide harus berisi:
@@ -373,7 +385,9 @@ export default function RecommendationSection({
           </span>
 
           <h3 className="font-bold text-lg mt-2">
-            Strategi yang Dipilih Sistem
+            {isSystemRecommended === false
+              ? "Strategi yang Anda Pilih"
+              : "Strategi yang Dipilih Sistem"}
           </h3>
 
           <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -382,14 +396,30 @@ export default function RecommendationSection({
               {analysis.recommended_strategy.label}
             </span>
 
+            {isSystemRecommended !== undefined && (
+              <span
+                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                  isSystemRecommended
+                    ? "bg-emerald-50 border border-emerald-100 text-emerald-700"
+                    : "bg-amber-50 border border-amber-100 text-amber-700"
+                }`}
+              >
+                {isSystemRecommended ? "✓ Sesuai rekomendasi sistem" : "Dipilih manual"}
+              </span>
+            )}
+
           </div>
 
           <p className="text-sm text-zinc-600 leading-relaxed mt-4 max-w-3xl">
-            {
-              STRATEGY_REASON[analysis.recommended_strategy.label] ??
-              STRATEGY_REASON["Address Pain Point"]
-            }
+            {strategyReasonText}
           </p>
+
+          {isSystemRecommended === false && systemRecommendedLabel && (
+            <p className="text-xs text-zinc-500 leading-relaxed mt-2 max-w-3xl">
+              Berdasarkan data, sistem sebenarnya merekomendasikan strategi{" "}
+              <span className="font-bold text-zinc-700">{systemRecommendedLabel}</span>.
+            </p>
+          )}
 
         </div>
 
@@ -567,9 +597,16 @@ export default function RecommendationSection({
               className="p-5 flex flex-col justify-between border border-zinc-200 rounded-2xl bg-white hover:shadow-lg transition-all"
             >
               <div className="space-y-4">
-                <span className={`inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold ${formatBadgeStyle(idea.format)}`}>
-                  {idea.format}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold ${formatBadgeStyle(idea.format)}`}>
+                    {idea.format}
+                  </span>
+                  {idea.category && (
+                    <span className="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold bg-zinc-100 border border-zinc-200 text-zinc-600">
+                      {idea.category}
+                    </span>
+                  )}
+                </div>
 
                 <h4 className="text-xs font-bold text-zinc-900 leading-snug">{idea.title}</h4>
 
