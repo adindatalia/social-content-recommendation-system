@@ -24,9 +24,15 @@ export interface GeneratedIdea {
 }
 
 // Analyze
-export interface PainPoint {
+export interface PhraseItem {
   keyword: string;
   count: number;
+}
+
+export interface DominantPhrases {
+  negative: PhraseItem[];
+  neutral: PhraseItem[];
+  positive: PhraseItem[];
 }
 
 export interface RecommendedStrategy {
@@ -43,7 +49,7 @@ export interface AnalysisResult {
     Negatif: number;
   };
 
-  pain_points: PainPoint[];
+  dominant_phrases: DominantPhrases;
 
   recommended_strategy: RecommendedStrategy;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import type {GenerationResult, HistoryItem, Notification } from "@/lib/types";
+import type {AnalysisResult, GenerationResult, HistoryItem, Notification } from "@/lib/types";
 import { INITIAL_HISTORY } from "@/lib/mockData";
 
 /**
@@ -18,7 +18,7 @@ export function useContentGenerator() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingStep, setLoadingStep] = useState<number>(0);
   const [generatedResult, setGeneratedResult] = useState<GenerationResult | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
   const [history, setHistory] = useState<HistoryItem[]>(INITIAL_HISTORY);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -74,9 +74,9 @@ export function useContentGenerator() {
       }
     );
 
-    const analyzeData = await analyzeResponse.json();
+    const analyzeData: AnalysisResult = await analyzeResponse.json();
     if (!analyzeResponse.ok) {
-      throw new Error(analyzeData.error || "Analyze gagal");
+      throw new Error((analyzeData as { error?: string }).error || "Analyze gagal");
     }
 
     setAnalysisResult(analyzeData);

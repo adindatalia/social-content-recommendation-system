@@ -29,18 +29,18 @@ def generate():
             "message": f"Tidak ada komentar yang cocok dengan '{keyword}'"
         }), 404
 
-    # 2. Insight: distribusi + pain points (IndoBERT + ekstraksi frasa)
+    # 2. Insight: distribusi + frasa dominan per kategori sentimen (IndoBERT + ekstraksi frasa)
     insight = build_insight(comments)
 
-    # 3. Strategi final (pakai pilihan user kalau ada, kalau tidak auto)
-    strategy = resolve_strategy(insight["distribution"], chosen=chosen_angle)
+    # 3. Strategi final (pakai pilihan user kalau ada, kalau tidak auto) + reasoning
+    strategy = resolve_strategy(insight["distribution"], chosen=chosen_angle, dominant_phrases=insight["dominant_phrases"])
 
     # 4. Generate ide via LLM
     try:
         ideas = generate_ideas(
             keyword=keyword,
             distribution=insight["distribution"],
-            pain_points=insight["pain_points"],
+            dominant_phrases=insight["dominant_phrases"],
             strategy=strategy,
         )
     except Exception as e:
@@ -57,6 +57,9 @@ def generate():
         "periode": periode,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "ideas": ideas,
+        "strategy": strategy,
+        "dominant_phrases": insight["dominant_phrases"],
+        "distribution": insight["distribution"],
     }
 
     # 6. Simpan history 

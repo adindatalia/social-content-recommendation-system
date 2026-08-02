@@ -1,4 +1,3 @@
-
 from flask import Blueprint, request, jsonify
 
 from app.services.keyword_service import get_comments_by_keyword
@@ -26,16 +25,16 @@ def analyze():
             "keyword": keyword
         }), 404
 
-    # 2. Hitung distribusi + pain points
+    # 2. Hitung distribusi + frasa dominan per kategori sentimen
     insight = build_insight(comments)
 
-    # 3. Tentukan angle rekomendasi dari sentimen dominan
-    strategy = resolve_strategy(insight["distribution"], chosen=None)
+    # 3. Tentukan angle rekomendasi dari sentimen dominan + frasa dominan (reasoning)
+    strategy = resolve_strategy(insight["distribution"], chosen=None, dominant_phrases=insight["dominant_phrases"])
 
     return jsonify({
         "keyword": keyword,
         "total_comments": insight["total_comments"],
         "distribution": insight["distribution"],
-        "pain_points": insight["pain_points"],
+        "dominant_phrases": insight["dominant_phrases"],
         "recommended_strategy": strategy,
     })

@@ -1,4 +1,3 @@
-
 import os
 import json
 import re
@@ -134,14 +133,14 @@ def _sanitize_ideas(ideas: list) -> list:
 def generate_ideas(
     keyword: str,
     distribution: dict,
-    pain_points: list,
+    dominant_phrases: dict,
     strategy: dict
 ) -> list:
 
     prompt = build_prompt(
         keyword,
         distribution,
-        pain_points,
+        dominant_phrases,
         strategy
     )
 

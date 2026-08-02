@@ -40,7 +40,7 @@ export default function Home() {
         {gen.generatedResult && !gen.isLoading && (
           <RecommendationSection
             result={gen.generatedResult}
-            analysis={gen.analysisResult}
+            analysis={gen.generatedResult.analysis}
             copiedId={gen.copiedId}
             onCopy={gen.copyToClipboard}
             onSave={(title) => gen.addNotification(`Draf "${title}" berhasil disimpan ke sistem!`)}

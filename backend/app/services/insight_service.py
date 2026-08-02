@@ -24,10 +24,25 @@ _STOPWORDS = {
 
 # Frasa/kata terlalu generik (bukan keluhan spesifik) -> dibuang dari pain point
 _GENERIC_PHRASES = {
-    "rumah sakit", "sakit rumah", "layanan kesehatan", "kesehatan layanan",
+    "sakit rumah", "layanan kesehatan", "kesehatan layanan",
     "bpjs kesehatan", "kesehatan bpjs", "sakit umum", "puskesmas rumah",
 }
 _GENERIC_WORDS = {"rumah", "sakit", "kesehatan", "klinik", "puskesmas", "dokter", "pasien", "bpjs"}
+
+# Frasa domain kesehatan yang tetap BERMAKNA walau kedua katanya termasuk
+# _GENERIC_WORDS -- dikecualikan dari rule "buang jika kedua kata generik"
+# supaya tidak hilang jadi fragmen terpotong seperti "masuk rumah"/"biaya rumah"
+# (sebelumnya bigram "rumah sakit" selalu dibuang duluan, sehingga fragmen
+# tetangganya yang justru muncul sebagai hasil akhir).
+_MEANINGFUL_DOMAIN_PHRASES = {"rumah sakit"}
+_BAD_PHRASES = {
+    "masuk rumah",
+    "biaya rumah",
+    "sakit penuh",
+    "menunggu mommy",
+    "periksa bingung",
+    "bingung kemana",
+}
 
 # Kata yang justru MENANDAKAN keluhan (untuk memfilter frasa yang relevan)
 _COMPLAINT_SIGNALS = {
@@ -75,80 +90,99 @@ def _clean_tokens(text: str) -> list[str]:
     return [t for t in tokens if len(t) >= 4 and t not in _STOPWORDS]
 
 
-def extract_pain_points(comments: list[dict], top_n: int = 5) -> list[dict]:
+def _extract_phrases_from_texts(texts: list[str], top_n: int = 5, apply_signal_bonus: bool = True) -> list[dict]:
     """
-    Ekstrak pain point sebagai FRASA BERMAKNA (bigram) dari komentar negatif,
-    bukan sekadar kata dengan frekuensi tertinggi.
-
-    Strategi:
-      1. Kumpulkan bigram (2 kata berdampingan) dari komentar negatif.
-      2. Prioritaskan bigram yang mengandung kata sinyal keluhan.
-      3. Fallback ke unigram bila bigram terlalu sedikit.
+    Logika ekstraksi ASLI (tidak diubah): bigram + fallback unigram.
+    `apply_signal_bonus` mengontrol apakah bonus skor + fallback prioritas
+    kata sinyal keluhan (_COMPLAINT_SIGNALS) dipakai -- ini HANYA relevan
+    untuk kategori Negatif. Untuk Netral/Positif, apply_signal_bonus=False
+    sehingga hanya frekuensi murni yang dipakai (perhitungan dasarnya tetap
+    sama persis, cuma bonus keluhan tidak diterapkan).
     """
-    # --- kumpulkan bigram & unigram dari komentar negatif ---
     bigrams = Counter()
     unigrams = Counter()
 
-    for x in comments:
-        if x.get("predicted_sentiment") != "Negatif":
-            continue
-        text = x.get("normalized_text") or x.get("text") or ""
+    for text in texts:
         toks = _clean_tokens(text)
-
         for t in toks:
             unigrams[t] += 1
         for a, b in zip(toks, toks[1:]):
             bigrams[(a, b)] += 1
 
-    # --- prioritaskan bigram yang mengandung sinyal keluhan ---
     scored_bigrams = []
     for (a, b), count in bigrams.items():
         phrase = f"{a} {b}"
-        if phrase in _GENERIC_PHRASES:      # buang frasa terlalu umum
+        if phrase in _BAD_PHRASES:
             continue
-        # buang bigram yang KEDUA katanya generik (mis. "rumah sakit")
-        if a in _GENERIC_WORDS and b in _GENERIC_WORDS:
+        if phrase in _GENERIC_PHRASES:
             continue
-        signal = (a in _COMPLAINT_SIGNALS) or (b in _COMPLAINT_SIGNALS)
-        # Frasa keluhan diterima walau muncul 1x; frasa biasa minimal 2x.
-        if not signal and count < 2:
+        if a in _GENERIC_WORDS and b in _GENERIC_WORDS and phrase not in _MEANINGFUL_DOMAIN_PHRASES:
             continue
-        score = count * (3 if signal else 1)  # bonus bila frasa keluhan
+
+        if apply_signal_bonus:
+            signal = (a in _COMPLAINT_SIGNALS) or (b in _COMPLAINT_SIGNALS)
+            if not signal and count < 2:
+                continue
+            score = count * (3 if signal else 1)
+        else:
+            if count < 2:
+                continue
+            score = count
+
         scored_bigrams.append((phrase, count, score))
 
     scored_bigrams.sort(key=lambda x: x[2], reverse=True)
 
-    pain_points = [{"keyword": phrase, "count": count}
-                   for phrase, count, _ in scored_bigrams[:top_n]]
+    phrases = [{"keyword": phrase, "count": count}
+               for phrase, count, _ in scored_bigrams[:top_n]]
 
-    # --- fallback: bila bigram kurang, lengkapi dengan unigram sinyal keluhan ---
-    if len(pain_points) < top_n:
-        existing = {p["keyword"] for p in pain_points}
+    if apply_signal_bonus and len(phrases) < top_n:
+        existing = {p["keyword"] for p in phrases}
         signal_unigrams = [(w, c) for w, c in unigrams.most_common()
                            if w in _COMPLAINT_SIGNALS and w not in existing]
         for w, c in signal_unigrams:
-            if len(pain_points) >= top_n:
+            if len(phrases) >= top_n:
                 break
-            pain_points.append({"keyword": w, "count": c})
+            phrases.append({"keyword": w, "count": c})
 
-    # --- fallback terakhir: unigram frekuensi tertinggi (bila masih kurang) ---
-    if len(pain_points) < top_n:
-        existing = {p["keyword"] for p in pain_points}
+    if len(phrases) < top_n:
+        existing = {p["keyword"] for p in phrases}
         for w, c in unigrams.most_common():
-            if len(pain_points) >= top_n:
+            if len(phrases) >= top_n:
                 break
             if w not in existing:
-                pain_points.append({"keyword": w, "count": c})
+                phrases.append({"keyword": w, "count": c})
 
-    return pain_points[:top_n]
+    return phrases[:top_n]
+
+
+def extract_pain_points(comments: list[dict], top_n: int = 5) -> dict:
+    """
+    Jalankan logika ekstraksi yang SAMA (lihat _extract_phrases_from_texts)
+    untuk ketiga kategori sentimen. Bonus sinyal keluhan hanya dipakai untuk
+    Negatif; Netral/Positif memakai frekuensi murni tanpa bonus.
+    """
+    texts_by_sentiment = {"Negatif": [], "Netral": [], "Positif": []}
+    for x in comments:
+        sentiment = x.get("predicted_sentiment")
+        if sentiment not in texts_by_sentiment:
+            continue
+        text = x.get("normalized_text") or x.get("text") or ""
+        texts_by_sentiment[sentiment].append(text)
+
+    return {
+        "negative": _extract_phrases_from_texts(texts_by_sentiment["Negatif"], top_n, apply_signal_bonus=True),
+        "neutral":  _extract_phrases_from_texts(texts_by_sentiment["Netral"], top_n, apply_signal_bonus=False),
+        "positive": _extract_phrases_from_texts(texts_by_sentiment["Positif"], top_n, apply_signal_bonus=False),
+    }
 
 
 def build_insight(comments: list[dict]) -> dict:
     comments = predict_sentiments(comments)
     distribution = compute_distribution(comments)
-    pain_points = extract_pain_points(comments)
+    dominant_phrases = extract_pain_points(comments)
     return {
         "total_comments": len(comments),
         "distribution": distribution,
-        "pain_points": pain_points,
+        "dominant_phrases": dominant_phrases,
     }

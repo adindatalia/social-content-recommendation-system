@@ -60,11 +60,36 @@ def recommend_strategy(distribution: dict) -> str:
     return _DOMINANT_TO_STRATEGY.get(dominant, "edukasi_informatif")
 
 
-def resolve_strategy(distribution: dict, chosen=None) -> dict:
+_SENTIMENT_TO_PHRASE_KEY = {"Negatif": "negative", "Netral": "neutral", "Positif": "positive"}
+
+
+def _build_reasoning(distribution: dict, dominant_phrases: dict, recommended_key: str) -> list[str]:
+    """
+    Alasan rekomendasi SISTEM (bukan strategi hasil pilihan user) -- dihitung
+    murni dari distribusi sentimen + dominant_phrases yang sudah ada, tanpa
+    logika/algoritma baru.
+    """
+    target_sentiment = STRATEGY_CONFIG[recommended_key]["target_sentiment"]
+    pct = (distribution or {}).get(target_sentiment, 0)
+
+    reasons = [f"Sentimen {target_sentiment.lower()} mendominasi hasil analisis ({pct}% dari komentar yang ditemukan)."]
+
+    phrase_key = _SENTIMENT_TO_PHRASE_KEY.get(target_sentiment)
+    phrases = (dominant_phrases or {}).get(phrase_key) or []
+    if phrases:
+        top = phrases[0]["keyword"]
+        reasons.append(f"Frasa dominan pada kategori {target_sentiment.lower()}: \"{top}\".")
+
+    return reasons
+
+
+def resolve_strategy(distribution: dict, chosen=None, dominant_phrases: dict = None) -> dict:
     """
     Tentukan strategi final.
     - Kalau user memilih angle (chosen), pakai itu (menerima key/label/variasi).
     - Kalau tidak/tidak cocok, pakai rekomendasi dari sentimen dominan.
+    - `reasoning` selalu dihitung untuk strategi yang DIREKOMENDASIKAN sistem,
+      supaya alasan tetap tampil meski user akhirnya memilih strategi lain.
     """
     recommended = recommend_strategy(distribution)
     normalized = _normalize_choice(chosen)
@@ -73,6 +98,9 @@ def resolve_strategy(distribution: dict, chosen=None) -> dict:
     config = STRATEGY_CONFIG[key].copy()
     config["key"] = key
     config["is_recommended"] = (key == recommended)
+    config["recommended_key"] = recommended
+    config["recommended_label"] = STRATEGY_CONFIG[recommended]["label"]
+    config["reasoning"] = _build_reasoning(distribution, dominant_phrases, recommended)
     # DEBUG: log untuk memastikan nilai chosen_angle yang diterima
     print(f"[strategy_service] chosen='{chosen}' -> normalized='{normalized}' -> key final='{key}'")
     return config

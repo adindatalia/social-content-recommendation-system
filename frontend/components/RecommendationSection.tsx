@@ -1,30 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { GenerationResult } from "@/lib/types";
+import type { AnalysisResult, GenerationResult, PhraseItem } from "@/lib/types";
 
-interface PainPoint {
-  keyword: string;
-  count: number;
-}
+type SentimentLabel = "Negatif" | "Netral" | "Positif";
 
-interface AnalysisResult {
-  keyword: string;
-  total_comments: number;
-
-  distribution: {
-    Negatif: number;
-    Netral: number;
-    Positif: number;
-  };
-
-  pain_points: PainPoint[];
-
-  recommended_strategy: {
-    key: string;
-    label: string;
-  };
-}
+const SENTIMENT_TO_PHRASE_KEY: Record<
+  SentimentLabel,
+  keyof AnalysisResult["dominant_phrases"]
+> = {
+  Negatif: "negative",
+  Netral: "neutral",
+  Positif: "positive",
+};
 
 interface RecommendationSectionProps {
   result: GenerationResult;
@@ -103,7 +91,7 @@ export default function RecommendationSection({
     },
   ];
 
-  const dominant : "Negatif" | "Netral" | "Positif" =
+  const dominant: SentimentLabel =
     analysis.distribution.Negatif >= analysis.distribution.Netral &&
     analysis.distribution.Negatif >= analysis.distribution.Positif
       ? "Negatif"
@@ -111,7 +99,8 @@ export default function RecommendationSection({
       ? "Netral"
       : "Positif";
 
-  const painPoints: PainPoint[] = analysis.pain_points ?? [];
+  const dominantPhrases: PhraseItem[] =
+    analysis.dominant_phrases?.[SENTIMENT_TO_PHRASE_KEY[dominant]] ?? [];
 
   const promptId = "prompt";
 
@@ -122,9 +111,9 @@ export default function RecommendationSection({
   ${analysis.keyword}
   Sentimen Dominan :
   ${dominant}
-  Pain Point :
-  ${analysis.pain_points
-    .map((p: PainPoint) => `• ${p.keyword}`)
+  Frasa Dominan :
+  ${dominantPhrases
+    .map((p: PhraseItem) => `• ${p.keyword}`)
     .join("\n")}
   Strategi Konten :
   ${analysis.recommended_strategy?.label}
@@ -329,18 +318,18 @@ export default function RecommendationSection({
           <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm p-6">
 
             <h3 className="font-bold text-sm">
-              Top Pain Points
+              Frasa Dominan
             </h3>
 
             <p className="text-xs text-zinc-400 mt-1">
-              Keluhan yang paling sering ditemukan
+              Frasa yang paling sering muncul pada sentimen {dominant.toLowerCase()}
             </p>
 
             <div className="space-y-5 mt-6">
 
-              {painPoints.map((item:PainPoint, index: number) => (
+              {dominantPhrases.map((item: PhraseItem, index: number) => (
 
-                <div key={item.keyword}>
+                <div key={`${item.keyword}-${index}`}>
 
                   <div className="flex justify-between text-xs mb-2">
 
