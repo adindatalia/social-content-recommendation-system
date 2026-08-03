@@ -53,22 +53,6 @@ export default function InsightSection() {
     { label: "Netral", pct: neutral, color: "bg-amber-500" },
   ];
 
-  // Bangun path polyline sederhana dari data trend backend supaya
-  // grafik benar-benar merepresentasikan angka yang dikirim server,
-  // bukan lagi path statis.
-  function buildPath(values: number[]): string {
-    if (!values || values.length === 0) return "";
-    const max = Math.max(...values, 1);
-    const stepX = 580 / (values.length - 1 || 1);
-    return values
-      .map((v, i) => {
-        const x = 10 + i * stepX;
-        const y = 150 - (v / max) * 130;
-        return `${i === 0 ? "M" : "L"} ${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
-  }
-
   return (
     <section id="insight-section" className="space-y-10 border-t border-zinc-200/80 pt-16 scroll-mt-20">
       <div className="space-y-2">
@@ -78,8 +62,8 @@ export default function InsightSection() {
         </h2>
         <p className="text-sm leading-relaxed text-zinc-500 max-w-lg font-medium">
           {data
-            ? `Analisis sentimen dari ${data.total_comments} komentar publik di berbagai topik kesehatan dalam 14 hari terakhir.`
-            : "Memuat analisis sentimen publik dari berbagai topik kesehatan..."}
+            ? `Analisis sentimen dari ${data.total_comments} komentar publik di seluruh dataset yang tersedia.`
+            : "Memuat analisis sentimen publik dari dataset..."}
         </p>
       </div>
 
@@ -96,7 +80,7 @@ export default function InsightSection() {
           <div>
             <h3 className="text-sm font-bold text-zinc-900">Distribusi Sentimen</h3>
             <p className="text-[11px] text-zinc-400 font-medium mt-0.5">
-              {data ? `Dari ${data.total_comments} komentar publik terbaru` : "Memuat data..."}
+              {data ? `Dari ${data.total_comments} komentar publik` : "Memuat data..."}
             </p>
           </div>
 
@@ -155,12 +139,16 @@ export default function InsightSection() {
         <div className="p-6 border border-zinc-200/80 rounded-2xl bg-white shadow-sm flex flex-col justify-between min-h-[300px]">
           <div>
             <h3 className="text-sm font-bold text-zinc-900">Top Pain Points</h3>
-            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Keluhan paling sering muncul di komentar</p>
+            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Frasa keluhan paling sering muncul di dataset</p>
           </div>
 
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <span className="w-8 h-8 rounded-full border-4 border-zinc-100 border-t-teal-600 animate-spin" />
+            </div>
+          ) : (data?.pain_points ?? []).length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-xs text-zinc-400 font-medium text-center">Belum ada frasa keluhan yang menonjol.</p>
             </div>
           ) : (
             <div className="space-y-4 my-4 flex-1 flex flex-col justify-center">
@@ -179,52 +167,6 @@ export default function InsightSection() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Sentiment Trend */}
-      <div className="p-6 border border-zinc-200/80 rounded-2xl bg-white shadow-sm">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
-          <div>
-            <h3 className="text-sm font-bold text-zinc-900">Tren Sentimen 14 Hari Terakhir</h3>
-            <p className="text-[11px] text-zinc-400 font-medium mt-0.5">
-              Perubahan volume sentimen harian dari data komentar publik
-            </p>
-          </div>
-        </div>
-
-        <div className="relative" style={{ height: 180 }}>
-          <svg viewBox="0 0 600 160" className="w-full h-full" preserveAspectRatio="none">
-            {[0, 40, 80, 120, 160].map((y) => (
-              <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#f3f4f6" strokeWidth="1" />
-            ))}
-            {data && (
-              <>
-                <path d={buildPath(data.trend.positive)} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d={buildPath(data.trend.negative)} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d={buildPath(data.trend.neutral)} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 4" />
-              </>
-            )}
-          </svg>
-
-          <div className="flex justify-between px-2 mt-2">
-            {(data?.trend.labels ?? []).map((day) => (
-              <span key={day} className="text-[10px] text-zinc-400 font-bold">{day}</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6 mt-4">
-          {[
-            { label: "Positif", color: "bg-emerald-500" },
-            { label: "Negatif", color: "bg-red-500" },
-            { label: "Netral", color: "bg-amber-500" },
-          ].map((l) => (
-            <div key={l.label} className="flex items-center gap-2">
-              <span className={`w-3.5 h-0.5 ${l.color} block`} />
-              <span className="text-xs font-bold text-zinc-500">{l.label}</span>
-            </div>
-          ))}
         </div>
       </div>
     </section>

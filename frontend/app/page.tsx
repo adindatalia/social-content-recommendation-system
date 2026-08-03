@@ -3,11 +3,12 @@
 import { useContentGenerator } from "@/hooks/useContentGenerator";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import InsightSection from "@/components/InsightSection";
 import SearchForm from "@/components/SearchForm";
+import InsightSection from "@/components/InsightSection";
 import Loading from "@/components/Loading";
-import RecommendationSection from "@/components/RecommendationSection";
-import HistorySection from "@/components/HistorySection";
+import StrategySection from "@/components/StrategySection";
+import IdeasSection from "@/components/IdeasSection";
+import PromptDetailSection from "@/components/PromptDetailSection";
 import Toast from "@/components/Toast";
 
 export default function Home() {
@@ -23,37 +24,53 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-6 space-y-20 pb-20">
 
-        {/* 3. Insight publik umum — ringkasan sentimen sebelum user memilih topik spesifik */}
-        <InsightSection />
-
-        {/* 4. Generator — pilih strategi, keyword, tombol Generate */}
+        {/* 3. Search bar — satu-satunya pintu masuk generator, langsung di bawah Hero */}
         <SearchForm
-          selectedAngle={gen.selectedAngle}
-          setSelectedAngle={gen.setSelectedAngle}
           keyword={gen.keyword}
           setKeyword={gen.setKeyword}
-          isLoading={gen.isLoading}
-          onGenerate={gen.handleGenerate}
+          isAnalyzing={gen.isAnalyzing}
+          onAnalyze={gen.handleAnalyze}
           onSelectTopic={gen.selectTopicSuggestion}
         />
 
-        {/* 5. Loading — hanya saat proses generate berjalan */}
-        {gen.isLoading && <Loading loadingStep={gen.loadingStep} />}
+        {/* 4. Loading saat proses analisis berjalan */}
+        {gen.isAnalyzing && <Loading loadingStep={0} />}
 
-        {/* 6. Hasil generate — hanya setelah data tersedia */}
-        {gen.generatedResult && !gen.isLoading && (
-          <RecommendationSection
-            result={gen.generatedResult}
-            analysis={gen.generatedResult.analysis}
-            copiedId={gen.copiedId}
-            onCopy={gen.copyToClipboard}
-            onSave={(title) => gen.addNotification(`Draf "${title}" berhasil disimpan ke sistem!`)}
-            onReset={gen.resetGenerator}
+        {/* 5. Insight publik umum — tampil sebagai default sebelum/​selain user mencari topik spesifik */}
+        {!gen.analysisResult && !gen.isAnalyzing && <InsightSection />}
+
+        {/* 6. Hasil analisis topik + pilih strategi — muncul setelah analisis selesai */}
+        {gen.analysisResult && !gen.isAnalyzing && (
+          <StrategySection
+            analysis={gen.analysisResult}
+            selectedAngle={gen.selectedAngle}
+            setSelectedAngle={gen.setSelectedAngle}
+            isGenerating={gen.isGenerating}
+            onGenerateIdeas={gen.handleGenerateIdeas}
           />
         )}
 
-        {/* 7. Riwayat — selalu di bawah hasil generate */}
-        <HistorySection history={gen.history} onLoad={gen.loadHistoryItem} />
+        {/* 7. Loading saat proses generate ide berjalan */}
+        {gen.isGenerating && <Loading loadingStep={gen.loadingStep} />}
+
+        {/* 8. Ide konten hasil AI — muncul setelah generate selesai */}
+        {gen.generatedResult && !gen.isGenerating && (
+          <>
+            <IdeasSection
+              result={gen.generatedResult}
+              copiedId={gen.copiedId}
+              onCopy={gen.copyToClipboard}
+              onSave={(title) => gen.addNotification(`Draf "${title}" berhasil disimpan ke sistem!`)}
+              onReset={gen.resetGenerator}
+            />
+            <PromptDetailSection
+              result={gen.generatedResult}
+              copiedId={gen.copiedId}
+              onCopy={gen.copyToClipboard}
+            />
+          </>
+        )}
+
       </main>
 
       <footer className="bg-zinc-50 py-12 border-t border-zinc-200 text-center text-xs text-zinc-400">
@@ -63,7 +80,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 8. Toast — tetap di paling bawah (fixed overlay) */}
+      {/* 10. Toast — tetap di paling bawah (fixed overlay) */}
       <Toast notifications={gen.notifications} />
     </div>
   );

@@ -186,3 +186,37 @@ def build_insight(comments: list[dict]) -> dict:
         "distribution": distribution,
         "dominant_phrases": dominant_phrases,
     }
+def _dominant_phrases_to_pain_points(dominant_phrases: dict, top_n: int = 5) -> list[dict]:
+    """
+    Ubah frasa dominan negatif (hasil build_insight, dari data asli) jadi
+    bentuk pain_points {text, count, pct} yang dipakai InsightSection.
+    pct dihitung relatif terhadap frasa dengan frekuensi tertinggi.
+    """ 
+    negative = dominant_phrases.get("negative", [])[:top_n]
+    if not negative:
+        return []
+
+    max_count = max(p["count"] for p in negative) or 1
+    return [
+        {
+            "text": p["keyword"].capitalize(),
+            "count": f"{p['count']} sebutan",
+            "pct": round((p["count"] / max_count) * 100),
+        }
+        for p in negative
+    ]
+
+
+def build_general_insight(comments: list[dict], top_n: int = 5) -> dict:
+    """
+    Bentuk payload untuk /api/insights (ringkasan umum, dihitung dari
+    SELURUH dataset asli). Dipanggil sekali saat precompute di startup
+    (app/__init__.py) -- endpoint /api/insights sendiri tidak pernah
+    memanggil fungsi ini langsung, hanya membaca cache-nya.
+    """
+    insight = build_insight(comments)
+    return {
+        "total_comments": insight["total_comments"],
+        "distribution": insight["distribution"],
+        "pain_points": _dominant_phrases_to_pain_points(insight["dominant_phrases"], top_n),
+    }

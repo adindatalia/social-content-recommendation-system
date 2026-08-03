@@ -1,8 +1,4 @@
-"""
-history_service.py
-------------------
-Menyimpan dan mengambil riwayat pembuatan ide konten dari PostgreSQL.
-"""
+
 from app import db
 from app.models import History, GeneratedIdea
 

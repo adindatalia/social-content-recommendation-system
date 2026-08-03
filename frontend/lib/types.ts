@@ -56,13 +56,6 @@ export interface PainPointItem {
   pct: number;
 }
 
-export interface InsightTrend {
-  labels: string[];
-  positive: number[];
-  negative: number[];
-  neutral: number[];
-}
-
 export interface InsightsData {
   total_comments: number;
   distribution: {
@@ -71,7 +64,6 @@ export interface InsightsData {
     Negatif: number;
   };
   pain_points: PainPointItem[];
-  trend: InsightTrend;
 }
 
 export interface AnalysisResult {

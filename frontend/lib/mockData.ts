@@ -114,21 +114,6 @@ export const TOPIC_SUGGESTIONS = [
   { text: "Awareness BPJS", badge: "Meningkat", badgeBg: "bg-red-50 border-red-200 text-red-700" },
 ];
 
-// ─── Pain point (InsightSection) ───
-export const PAIN_POINTS = [
-  { text: "Antrian lama di RS", count: "486 komentar", pct: 85 },
-  { text: "Biaya yang mahal", count: "250 komentar", pct: 60 },
-  { text: "Dokter judes/galak", count: "150 komentar", pct: 40 },
-  { text: "Pelayanan lambat", count: "87 komentar", pct: 25 },
-  { text: "Ruang tunggu kotor", count: "36 komentar", pct: 10 },
-];
-
-// ─── Distribusi sentimen (InsightSection donut + legend) ───
-export const SENTIMENT_LEGEND = [
-  { label: "Negatif", pct: "48%", color: "bg-red-500" },
-  { label: "Positif", pct: "32%", color: "bg-emerald-500" },
-  { label: "Netral", pct: "20%", color: "bg-amber-500" },
-];
 
 // ─── Kartu pilihan angle (SearchForm Step 1) ───
 export const ANGLE_OPTIONS = [
