@@ -49,9 +49,7 @@ export interface RecommendedStrategy {
   recommended_label?: string;
 }
 
-// ─── Insight publik umum (GET /api/insights) ───
-// Dipakai untuk ringkasan "apa yang dibicarakan publik" secara umum,
-// terpisah dari hasil analisis per-keyword (/api/analyze).
+
 export interface PainPointItem {
   text: string;
   count: string;
@@ -101,7 +99,18 @@ export interface GenerationResult {
 
   ideas: GeneratedIdea[];
 
-  analysis: AnalysisResult;
+// Snapshot analisis dari tahap /api/analyze (Step 1, sebelum strategi dipilih)
+analysis: AnalysisResult;
+
+// Field asli yang dikembalikan langsung oleh /api/generate
+strategy?: RecommendedStrategy;
+dominant_phrases?: DominantPhrases;
+distribution?: {
+  Positif: number;
+  Netral: number;
+  Negatif: number;
+};
+
 }
 
 // History
