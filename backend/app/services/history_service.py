@@ -35,7 +35,7 @@ def save_history(result: dict, strategy_key: str | None = None) -> int:
                 ),
                 format=idea.get(
                     "format",
-                    "TIKTOK - REELS"
+                    "Opsi 1"
                 ),
                 category=idea.get(
                     "category",

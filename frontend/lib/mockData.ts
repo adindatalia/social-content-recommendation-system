@@ -31,7 +31,7 @@ export const INITIAL_HISTORY: HistoryItem[] = [
         {
           id: "idea-1-1",
           title: "Paham gak sih kenapa antri RS jam 5 pagi?",
-          format: "TIKTOK - REELS",
+          format: "OPSI 1",
           category: "Address Pain Point",
           hook: "Pernah gak sih harus antri jam 5 pagi?",
           body: "Kupas tuntas fakta sistem pendaftaran rumah sakit... Tips booking online biar gak perlu nunggu dari subuh.",
@@ -42,7 +42,7 @@ export const INITIAL_HISTORY: HistoryItem[] = [
         {
           id: "idea-1-2",
           title: "Cara Antri RS Tanpa Ribet!",
-          format: "FEED - CAROUSEL",
+          format: "OPSI 2",
           category: "Address Pain Point",
           hook: "Tips jitu hindari antrian mengular...",
           body: "Cari tahu jam-jam sepi pelayanan... Gunakan aplikasi JKN Mobile untuk antrean online.",
@@ -53,7 +53,7 @@ export const INITIAL_HISTORY: HistoryItem[] = [
         {
           id: "idea-1-3",
           title: "3 Detik Masuk Antrean Tanpa Capek",
-          format: "INFOGRAFIK",
+          format: "OPSI 3",
           category: "Address Pain Point",
           hook: "Visual alur antrian yang ringkas...",
           body: "Perbandingan manual vs digital... Langkah demi langkah aktivasi akun...",

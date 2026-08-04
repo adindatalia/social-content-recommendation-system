@@ -3,9 +3,16 @@
 import type { GenerationResult } from "@/lib/types";
 
 function formatBadgeStyle(format: string) {
-  if (format === "TIKTOK - REELS" || format === "Reels") return "bg-rose-50 border border-rose-100 text-rose-700";
-  if (format === "FEED - CAROUSEL" || format === "Carousel") return "bg-teal-50 border border-teal-100 text-teal-700";
-  return "bg-indigo-50 border border-indigo-100 text-indigo-700";
+  if (format === "Opsi 1")
+    return "bg-rose-50 border border-rose-100 text-rose-700";
+
+  if (format === "Opsi 2")
+    return "bg-teal-50 border border-teal-100 text-teal-700";
+
+  if (format === "Opsi 3")
+    return "bg-indigo-50 border border-indigo-100 text-indigo-700";
+
+  return "bg-zinc-100 border border-zinc-200 text-zinc-700";
 }
 
 interface IdeasSectionProps {

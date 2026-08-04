@@ -1,12 +1,8 @@
 
 export type ContentFormat =
-  | "TIKTOK - REELS"
-  | "FEED - CAROUSEL"
-  | "INFOGRAFIK"
-  | "Shorts"
-  | "Reels"
-  | "Carousel"
-  | "Feed";
+  | "Opsi 1"
+  | "Opsi 2"
+  | "Opsi 3";
 
 
 // Generate

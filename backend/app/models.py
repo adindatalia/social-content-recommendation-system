@@ -37,7 +37,7 @@ class GeneratedIdea(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     history_id = db.Column(db.Integer, db.ForeignKey('history.id', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(255), nullable=False)
-    format = db.Column(db.String(100), nullable=False) # e.g. "TIKTOK - REELS", "FEED - CAROUSEL"
+    format = db.Column(db.String(100), nullable=False) 
     category = db.Column(db.String(100), nullable=False) # e.g. "Address Pain Point"
     hook = db.Column(db.Text, nullable=False)
     body = db.Column(db.Text, nullable=False)

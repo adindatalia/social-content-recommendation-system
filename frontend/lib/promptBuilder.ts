@@ -37,7 +37,7 @@ const STRATEGY_TONE: Record<string, StrategyTone> = {
   },
 };
 
-const FORMATS = ["TIKTOK - REELS", "FEED - CAROUSEL", "INFOGRAFIK"];
+const FORMATS = ["OPSI 1", "OPSI 2", "OPSI 3"];
 
 const SENTIMENT_TO_PHRASE_KEY: Record<string, keyof DominantPhrases> = {
   Negatif: "negative",
@@ -108,7 +108,7 @@ Balas HANYA dalam JSON valid (tanpa teks pembuka, tanpa markdown, tanpa \`\`\`).
   "ideas": [
     {
       "title": "judul menarik, maksimal 70 karakter",
-      "format": "TIKTOK - REELS",
+      "format": "OPSI 1",
       "hook": "kalimat pembuka yang menyebutkan frasa dominan/data secara eksplisit",
       "body": "isi/script konten, 2-4 kalimat, actionable, spesifik ke data",
       "cta": "call to action yang jelas",
