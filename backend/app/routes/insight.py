@@ -1,26 +1,23 @@
+import json
+import os
+
 from flask import Blueprint, jsonify
 
-from app.services import insight_cache
-
 insight_bp = Blueprint("insight", __name__)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+JSON_PATH = os.path.join(BASE_DIR, "data", "dashboard_summary.json")
 
 
 @insight_bp.route("/api/insights", methods=["GET"])
 def get_insights():
-    """
-    Ringkasan awal (sebelum user menganalisis keyword apa pun) -- dari
-    SELURUH dataset asli. Dataset statis, jadi ringkasan ini dihitung
-    SEKALI saat server startup (app/__init__.py, di dalam app context)
-    dan disimpan di insight_cache.
+    try:
+        with open(JSON_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
 
-    Endpoint ini TIDAK PERNAH memanggil build_insight()/IndoBERT sendiri
-    -- kalau cache belum siap (precompute gagal saat startup), balas 503
-    daripada diam-diam menghitung ulang saat request masuk.
-    """
-    cached = insight_cache.get()
-    if cached is None:
+        return jsonify(data)
+
+    except Exception as e:
         return jsonify({
-            "error": "insight_not_ready",
-            "message": "Ringkasan insight belum siap. Cek log server: precompute saat startup kemungkinan gagal.",
-        }), 503
-    return jsonify(cached)
+            "error": str(e)
+        }), 500

@@ -1,11 +1,3 @@
-/**
- * services/api.ts
- * ---------------------------------------------------------------
- * Helper terpusat untuk komunikasi ke backend Flask.
- * Base URL sengaja disamakan dengan yang sudah dipakai di
- * hooks/useContentGenerator.ts (http://127.0.0.1:5000) supaya
- * konsisten satu sumber saat backend di-deploy ke domain lain.
- */
 
 import type { InsightsData } from "@/lib/types";
 
@@ -20,12 +12,7 @@ export interface HistoryRecord {
   timestamp: string;
 }
 
-/**
- * Ambil ringkasan sentimen publik secara umum (GET /api/insights).
- * Tanpa parameter keyword -> backend mengembalikan ringkasan default
- * (dipakai untuk preview "Apa yang dibicarakan publik?" di dashboard,
- * sebelum user menjalankan analisis untuk topik spesifik).
- */
+
 export async function fetchInsights(keyword?: string): Promise<InsightsData> {
   const url = keyword
     ? `${API_BASE_URL}/api/insights?keyword=${encodeURIComponent(keyword)}`
@@ -59,6 +46,27 @@ export async function fetchHistory(): Promise<HistoryRecord[]> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || "Gagal mengambil riwayat dari server");
+  }
+
+  return res.json();
+}
+
+export async function fetchHistoryDetail(
+  id: number | string
+) {
+  const res = await fetch(`${API_BASE_URL}/api/history/${id}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.error || "Gagal mengambil detail riwayat"
+    );
   }
 
   return res.json();

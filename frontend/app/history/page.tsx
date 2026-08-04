@@ -63,14 +63,11 @@ export default function HistoryPage() {
     return new Set(records.map((r) => r.keyword?.toLowerCase().trim())).size;
   }, [records]);
 
-  // ── Muat ulang keyword ke Dashboard & jalankan analisis lagi ──
-  const handleReanalyze = (item: HistoryRecord) => {
-    const params = new URLSearchParams({
-      keyword: item.keyword,
-      angle: item.angle || "",
-    });
-    router.push(`/?${params.toString()}`);
-  };
+  // ── Muat ulang keyword ke Dashboard  ──
+  const handleViewResult = (item: HistoryRecord) => {
+  router.push(`/?history=${item.id}`);
+};
+
 
   const handleDelete = async (id: number | string) => {
     setDeletingId(id);
@@ -187,10 +184,10 @@ export default function HistoryPage() {
                       <td className="py-4 px-6">
                         <div className="flex justify-end items-center gap-2">
                           <button
-                            onClick={() => handleReanalyze(item)}
+                            onClick={() => handleViewResult(item)}
                             className="text-[10px] px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
                           >
-                            Analisis Ulang
+                            Lihat Hasil
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}

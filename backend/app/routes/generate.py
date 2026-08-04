@@ -58,7 +58,7 @@ def generate():
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "ideas": ideas,
         "strategy": strategy,
-        "dominant_phrases": insight["dominant_phrases"],
+        "dominant_phrase": insight["dominant_phrases"],
         "distribution": insight["distribution"],
     }
 

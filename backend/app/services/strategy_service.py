@@ -16,91 +16,234 @@ STRATEGY_CONFIG = {
     },
 }
 
+
 _DOMINANT_TO_STRATEGY = {
     "Negatif": "address_pain_point",
     "Netral": "edukasi_informatif",
     "Positif": "showcase_positif",
 }
 
-# Peta bantu: dari berbagai bentuk input (label/variasi/format) -> key resmi
-_ALIAS_TO_KEY = {}
-for _key, _cfg in STRATEGY_CONFIG.items():
-    label_lower = _cfg["label"].lower()
-    _ALIAS_TO_KEY[_key.lower()] = _key                                  # key resmi
-    _ALIAS_TO_KEY[label_lower] = _key                                   # "showcase positif"
-    _ALIAS_TO_KEY[label_lower.replace(" ", "_")] = _key                 # "showcase_positif"
-    _ALIAS_TO_KEY[label_lower.replace(" ", "")] = _key                  # "showcasepositif"
-    _ALIAS_TO_KEY[label_lower.replace(" ", "-")] = _key                 # "showcase-positif"  <- BARU
 
-# Alias kata tunggal sentimen sebagai jaring pengaman tambahan  <- BARU
+# Mapping berbagai format input ke key strategi resmi
+_ALIAS_TO_KEY = {}
+
+for _key, _cfg in STRATEGY_CONFIG.items():
+
+    label_lower = _cfg["label"].lower()
+
+    _ALIAS_TO_KEY[_key.lower()] = _key
+    _ALIAS_TO_KEY[label_lower] = _key
+    _ALIAS_TO_KEY[label_lower.replace(" ", "_")] = _key
+    _ALIAS_TO_KEY[label_lower.replace(" ", "")] = _key
+    _ALIAS_TO_KEY[label_lower.replace(" ", "-")] = _key
+
+
+# Alias tambahan
 _ALIAS_TO_KEY["negatif"] = "address_pain_point"
 _ALIAS_TO_KEY["netral"] = "edukasi_informatif"
 _ALIAS_TO_KEY["positif"] = "showcase_positif"
+
 _ALIAS_TO_KEY["pain_point"] = "address_pain_point"
 _ALIAS_TO_KEY["pain-point"] = "address_pain_point"
+
 _ALIAS_TO_KEY["edukasi"] = "edukasi_informatif"
 _ALIAS_TO_KEY["informatif"] = "edukasi_informatif"
+
 _ALIAS_TO_KEY["showcase"] = "showcase_positif"
 
 
+
 def _normalize_choice(chosen):
-    """Ubah apa pun yang dikirim frontend (key/label/variasi/format) jadi key resmi."""
+    """
+    Mengubah input frontend menjadi key strategi resmi.
+    """
+
     if not chosen:
         return None
+
     t = str(chosen).strip().lower()
-    # Normalisasi tambahan: hilangkan strip ganda, spasi ganda
-    t = t.replace("--", "-").replace("  ", " ")
+
+    t = (
+        t
+        .replace("--", "-")
+        .replace("  ", " ")
+    )
+
     return _ALIAS_TO_KEY.get(t)
 
 
+
 def recommend_strategy(distribution: dict) -> str:
+    """
+    Menentukan strategi berdasarkan sentimen dominan.
+    """
+
+    # DEBUG RECOVERY
+    print(
+        "[strategy_service] distribution masuk:",
+        distribution
+    )
+
+
     if not distribution or sum(distribution.values()) == 0:
+
+        print(
+            "[strategy_service] distribution kosong -> edukasi_informatif"
+        )
+
         return "edukasi_informatif"
-    dominant = max(distribution, key=distribution.get)
-    return _DOMINANT_TO_STRATEGY.get(dominant, "edukasi_informatif")
 
 
-_SENTIMENT_TO_PHRASE_KEY = {"Negatif": "negative", "Netral": "neutral", "Positif": "positive"}
+
+    dominant = max(
+        distribution,
+        key=distribution.get
+    )
 
 
-def _build_reasoning(distribution: dict, dominant_phrases: dict, recommended_key: str) -> list[str]:
-    """
-    Alasan rekomendasi SISTEM (bukan strategi hasil pilihan user) -- dihitung
-    murni dari distribusi sentimen + dominant_phrases yang sudah ada, tanpa
-    logika/algoritma baru.
-    """
-    target_sentiment = STRATEGY_CONFIG[recommended_key]["target_sentiment"]
-    pct = (distribution or {}).get(target_sentiment, 0)
+    # DEBUG RECOVERY
+    print(
+        "[strategy_service] sentimen dominan:",
+        dominant
+    )
 
-    reasons = [f"Sentimen {target_sentiment.lower()} mendominasi hasil analisis ({pct}% dari komentar yang ditemukan)."]
 
-    phrase_key = _SENTIMENT_TO_PHRASE_KEY.get(target_sentiment)
-    phrases = (dominant_phrases or {}).get(phrase_key) or []
+    strategy = _DOMINANT_TO_STRATEGY.get(
+        dominant,
+        "edukasi_informatif"
+    )
+
+
+    print(
+        "[strategy_service] strategi rekomendasi:",
+        strategy
+    )
+
+
+    return strategy
+
+
+
+_SENTIMENT_TO_PHRASE_KEY = {
+    "Negatif": "negative",
+    "Netral": "neutral",
+    "Positif": "positive"
+}
+
+
+
+def _build_reasoning(
+    distribution: dict,
+    dominant_phrases: dict,
+    recommended_key: str
+) -> list[str]:
+
+    target_sentiment = (
+        STRATEGY_CONFIG[recommended_key]["target_sentiment"]
+    )
+
+
+    pct = (
+        distribution or {}
+    ).get(
+        target_sentiment,
+        0
+    )
+
+
+    reasons = [
+        f"Sentimen {target_sentiment.lower()} mendominasi hasil analisis ({pct}% dari komentar yang ditemukan)."
+    ]
+
+
+    phrase_key = _SENTIMENT_TO_PHRASE_KEY.get(
+        target_sentiment
+    )
+
+
+    phrases = (
+        (dominant_phrases or {})
+        .get(
+            phrase_key
+        )
+        or []
+    )
+
+
     if phrases:
+
         top = phrases[0]["keyword"]
-        reasons.append(f"Frasa dominan pada kategori {target_sentiment.lower()}: \"{top}\".")
+
+        reasons.append(
+            f"Frasa dominan pada kategori {target_sentiment.lower()}: \"{top}\"."
+        )
+
 
     return reasons
 
 
-def resolve_strategy(distribution: dict, chosen=None, dominant_phrases: dict = None) -> dict:
+
+def resolve_strategy(
+    distribution: dict,
+    chosen=None,
+    dominant_phrases: dict = None
+) -> dict:
+
     """
-    Tentukan strategi final.
-    - Kalau user memilih angle (chosen), pakai itu (menerima key/label/variasi).
-    - Kalau tidak/tidak cocok, pakai rekomendasi dari sentimen dominan.
-    - `reasoning` selalu dihitung untuk strategi yang DIREKOMENDASIKAN sistem,
-      supaya alasan tetap tampil meski user akhirnya memilih strategi lain.
+    Menentukan strategi final.
+
+    Prioritas:
+    1. User memilih strategi -> gunakan pilihan user.
+    2. Tidak memilih -> gunakan rekomendasi sistem.
     """
-    recommended = recommend_strategy(distribution)
-    normalized = _normalize_choice(chosen)
-    key = normalized if normalized in STRATEGY_CONFIG else recommended
+
+
+    recommended = recommend_strategy(
+        distribution
+    )
+
+
+    normalized = _normalize_choice(
+        chosen
+    )
+
+
+    key = (
+        normalized
+        if normalized in STRATEGY_CONFIG
+        else recommended
+    )
+
 
     config = STRATEGY_CONFIG[key].copy()
+
+
     config["key"] = key
-    config["is_recommended"] = (key == recommended)
+
+    config["is_recommended"] = (
+        key == recommended
+    )
+
     config["recommended_key"] = recommended
-    config["recommended_label"] = STRATEGY_CONFIG[recommended]["label"]
-    config["reasoning"] = _build_reasoning(distribution, dominant_phrases, recommended)
-    # DEBUG: log untuk memastikan nilai chosen_angle yang diterima
-    print(f"[strategy_service] chosen='{chosen}' -> normalized='{normalized}' -> key final='{key}'")
+
+    config["recommended_label"] = (
+        STRATEGY_CONFIG[recommended]["label"]
+    )
+
+
+    config["reasoning"] = _build_reasoning(
+        distribution,
+        dominant_phrases,
+        recommended
+    )
+
+
+    # DEBUG RECOVERY
+    print(
+        f"[strategy_service] chosen='{chosen}' "
+        f"normalized='{normalized}' "
+        f"final_strategy='{key}'"
+    )
+
+
     return config

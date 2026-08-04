@@ -3,27 +3,10 @@
 import { useEffect, useState } from "react";
 import type { AnalysisResult, GenerationResult, HistoryItem, Notification } from "@/lib/types";
 import { INITIAL_HISTORY } from "@/lib/mockData";
+import { fetchHistoryDetail } from "@/services/api";
 
-/**
- * useContentGenerator
- * ---------------------------------------------------------------
- * Alur baru (2 aksi terpisah, bukan 1 form 2 langkah):
- *
- *   1. handleAnalyze   -> POST /api/analyze
- *      User cukup masukkan keyword lalu klik "Analisis Tren Topik".
- *      Backend mengembalikan distribusi sentimen + frasa dominan +
- *      strategi yang direkomendasikan sistem untuk keyword tsb.
- *
- *   2. handleGenerateIdeas -> POST /api/generate
- *      Muncul setelah user melihat hasil analisis & memilih strategi
- *      (StrategySection). Baru di titik inilah LLM dipanggil.
- *
- * Ini menggantikan handleGenerate lama yang langsung memanggil kedua
- * endpoint sekaligus di belakang satu tombol "Generate Ide Konten"
- * dengan step 1 (pilih angle) & step 2 (isi topik) yang urutannya
- * terbalik dari kebutuhan aslinya: user seharusnya melihat data dulu,
- * baru menentukan strategi -- bukan menebak strategi sebelum tahu data.
- */
+const STORAGE_KEY = "latest_generation";
+
 export function useContentGenerator() {
   const [selectedAngle, setSelectedAngle] = useState<string>("Address Pain Point");
   const [keyword, setKeyword] = useState<string>("");
@@ -139,6 +122,12 @@ export function useContentGenerator() {
       };
 
       setGeneratedResult(result);
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(result)
+      );
+
       setHistory((prev) => [
         {
           id: Date.now().toString(),
@@ -183,76 +172,113 @@ export function useContentGenerator() {
     setAnalysisResult(null);
     setKeyword("");
     setSelectedAngle("Address Pain Point");
+    
+    localStorage.removeItem(STORAGE_KEY);
+
     setTimeout(() => {
       document.getElementById("generator-section")?.scrollIntoView({ behavior: "smooth" });
     }, 50);
   };
 
-  // ── Muat keyword/angle dari query param (?keyword=&angle=) ──
-  // Dipakai oleh tombol "Analisis Ulang" di halaman History untuk
-  // membawa user kembali ke Dashboard dan langsung menjalankan
-  // pipeline analisis -> generate seperti semula.
+  
+ useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const historyId = params.get("history");
+
+  if (!historyId) return;
+
+  // Bersihkan query setelah dibaca
+  window.history.replaceState({}, "", window.location.pathname);
+
+  (async () => {
+    try {
+      setIsGenerating(true);
+
+      const data = await fetchHistoryDetail(historyId);
+
+      setKeyword(data.keyword);
+      setSelectedAngle(data.angle);
+      setPeriode(data.periode);
+
+      const analysis: AnalysisResult = {
+        keyword: data.keyword,
+        distribution: data.distribution ?? {},
+        dominant_phrases: data.dominant_phrase ?? {},
+        recommended_strategy: data.recommended_strategy ?? {},
+        total_comments: 0,
+      };
+
+      setAnalysisResult(analysis);
+
+      const result: GenerationResult = {
+        keyword: data.keyword,
+        angle: data.angle,
+        periode: data.periode,
+        timestamp: data.timestamp,
+
+        ideas: data.ideas,
+
+        analysis,
+
+        distribution: data.distribution,
+        dominant_phrases: data.dominant_phrase,
+        strategy: data.recommended_strategy,
+      };
+
+      setGeneratedResult(result);
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(result)
+      );
+
+      setTimeout(() => {
+        document
+          .getElementById("ideas-section")
+          ?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+
+      addNotification(`Riwayat "${data.keyword}" berhasil dimuat.`);
+    } catch (err) {
+      console.error(err);
+      addNotification("Gagal memuat riwayat.");
+    } finally {
+      setIsGenerating(false);
+    }
+    })();
+    }, []);
+
+    // ── Restore hasil terakhir saat kembali ke Dashboard ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const qKeyword = params.get("keyword");
-    const qAngle = params.get("angle");
 
-    if (!qKeyword) return;
+    // Kalau sedang membuka history, jangan restore localStorage
+    if (params.get("history")) return;
 
-    // Bersihkan query string dari address bar setelah dibaca
-    window.history.replaceState({}, "", window.location.pathname);
+    const saved = localStorage.getItem(STORAGE_KEY);
 
-    (async () => {
-      setKeyword(qKeyword);
-      if (qAngle) setSelectedAngle(qAngle);
-      setIsAnalyzing(true);
-      try {
-        const res = await fetch("http://127.0.0.1:5000/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword: qKeyword }),
-        });
-        const data: AnalysisResult = await res.json();
-        if (!res.ok) throw new Error((data as unknown as { error?: string }).error || "Analisis gagal");
+    if (!saved) return;
 
-        setAnalysisResult(data);
-        setIsAnalyzing(false);
+    try {
+      const result: GenerationResult = JSON.parse(saved);
 
-        setIsGenerating(true);
-        const genRes = await fetch("http://127.0.0.1:5000/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword: qKeyword, angle: qAngle || data.recommended_strategy.label }),
-        });
-        const generateData = await genRes.json();
-        if (!genRes.ok) throw new Error(generateData.error || "Generate gagal");
+      setGeneratedResult(result);
 
-        const result: GenerationResult = { ...generateData, analysis: data };
-        setGeneratedResult(result);
-        setHistory((prev) => [
-          {
-            id: Date.now().toString(),
-            keyword: qKeyword,
-            angle: generateData.angle,
-            periode: "7",
-            timestamp: generateData.timestamp,
-            result,
-          },
-          ...prev,
-        ]);
-
-        setTimeout(() => {
-          document.getElementById("ideas-section")?.scrollIntoView({ behavior: "smooth" });
-        }, 300);
-      } catch (err) {
-        console.error(err);
-        addNotification("Backend gagal dihubungi saat memuat ulang riwayat.");
-      } finally {
-        setIsAnalyzing(false);
-        setIsGenerating(false);
+      if (result.analysis) {
+        setAnalysisResult(result.analysis);
       }
-    })();
+
+      setKeyword(result.keyword);
+      setSelectedAngle(result.angle);
+      setPeriode(result.periode);
+
+    } catch (error) {
+      console.error("Gagal restore hasil terakhir:", error);
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, []);
+
 
   return {
     selectedAngle,

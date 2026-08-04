@@ -19,3 +19,17 @@ class GeneratedIdea(db.Model):
     hashtags = db.Column(db.JSON)
     justification = db.Column(db.Text)
     is_saved = db.Column(db.Boolean, default=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "format": self.format,
+            "category": self.category,
+            "hook": self.hook,
+            "body": self.body,
+            "cta": self.cta,
+            "hashtags": self.hashtags,
+            "justification": self.justification,
+            "is_saved": self.is_saved,
+        }

@@ -1,0 +1,35 @@
+{
+  "total_comments": 4289,
+  "distribution": {
+    "Negatif": 16,
+    "Netral": 83,
+    "Positif": 1
+  },
+  "pain_points": [
+    {
+      "text": "Antrian pelayanan",
+      "count": 152,
+      "pct": 100
+    },
+    {
+      "text": "Pelayanan lambat",
+      "count": 118,
+      "pct": 78
+    },
+    {
+      "text": "Ruang tunggu panas",
+      "count": 94,
+      "pct": 62
+    },
+    {
+      "text": "Biaya perawatan",
+      "count": 81,
+      "pct": 53
+    },
+    {
+      "text": "Administrasi BPJS",
+      "count": 66,
+      "pct": 43
+    }
+  ]
+}
