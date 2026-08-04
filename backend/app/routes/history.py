@@ -30,7 +30,10 @@ def get_history_by_id(hist_id):
         if hist_id.startswith("hist-"):
             raw_id = hist_id.replace("hist-", "")
 
-        item = History.query.get(int(raw_id))
+        item = db.session.get(
+            History,
+            int(raw_id)
+        )
 
         if not item:
             return jsonify({
@@ -54,4 +57,51 @@ def get_history_by_id(hist_id):
         print(e)
         return jsonify({
             "error": "Gagal mengambil detail riwayat"
+        }), 500
+
+@history_bp.route('/api/history/<string:hist_id>', methods=['DELETE'])
+def delete_history(hist_id):
+    try:
+        raw_id = hist_id
+
+        if hist_id.startswith("hist-"):
+            raw_id = hist_id.replace("hist-", "")
+
+        history = db.session.get(
+            History,
+            int(raw_id)
+        )
+
+        if not history:
+            return jsonify({
+                "error": "Riwayat tidak ditemukan"
+            }), 404
+
+        # hapus ide yang terkait terlebih dahulu
+        for idea in list(history.ideas):
+            db.session.delete(idea)
+
+        # hapus history
+        db.session.delete(history)
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Riwayat berhasil dihapus"
+        }), 200
+
+    except ValueError:
+        db.session.rollback()
+
+        return jsonify({
+            "error": "ID tidak valid"
+        }), 400
+
+    except Exception as e:
+        db.session.rollback()
+
+        print(e)
+
+        return jsonify({
+            "error": "Gagal menghapus riwayat"
         }), 500

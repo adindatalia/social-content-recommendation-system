@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { ContentGeneratorProvider } from "@/context/ContentGeneratorContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,7 +18,8 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "SehatFlow Content - Platform Riset & Pembuatan Ide Konten Kesehatan",
-  description: "Platform cerdas berbasis AI untuk riset tren, analisis sentimen, dan pembuatan ide konten kesehatan secara otomatis.",
+  description:
+    "Platform cerdas berbasis AI untuk riset tren, analisis sentimen, dan pembuatan ide konten kesehatan secara otomatis.",
 };
 
 export default function RootLayout({
@@ -30,8 +32,17 @@ export default function RootLayout({
       lang="id"
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
     >
-      <body className="min-h-full" style={{ background: "#ffffff", color: "#1a1a1a", fontFamily: "var(--font-inter), system-ui, sans-serif" }}>
-        {children}
+      <body
+        className="min-h-full"
+        style={{
+          background: "#ffffff",
+          color: "#1a1a1a",
+          fontFamily: "var(--font-inter), system-ui, sans-serif",
+        }}
+      >
+        <ContentGeneratorProvider>
+          {children}
+        </ContentGeneratorProvider>
       </body>
     </html>
   );

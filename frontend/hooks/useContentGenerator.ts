@@ -5,7 +5,6 @@ import type { AnalysisResult, GenerationResult, HistoryItem, Notification } from
 import { INITIAL_HISTORY } from "@/lib/mockData";
 import { fetchHistoryDetail } from "@/services/api";
 
-const STORAGE_KEY = "latest_generation";
 
 export function useContentGenerator() {
   const [selectedAngle, setSelectedAngle] = useState<string>("Address Pain Point");
@@ -123,11 +122,6 @@ export function useContentGenerator() {
 
       setGeneratedResult(result);
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(result)
-      );
-
       setHistory((prev) => [
         {
           id: Date.now().toString(),
@@ -173,7 +167,7 @@ export function useContentGenerator() {
     setKeyword("");
     setSelectedAngle("Address Pain Point");
     
-    localStorage.removeItem(STORAGE_KEY);
+
 
     setTimeout(() => {
       document.getElementById("generator-section")?.scrollIntoView({ behavior: "smooth" });
@@ -228,10 +222,6 @@ export function useContentGenerator() {
 
       setGeneratedResult(result);
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(result)
-      );
 
       setTimeout(() => {
         document
@@ -248,36 +238,6 @@ export function useContentGenerator() {
     }
     })();
     }, []);
-
-    // ── Restore hasil terakhir saat kembali ke Dashboard ──
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-
-    // Kalau sedang membuka history, jangan restore localStorage
-    if (params.get("history")) return;
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) return;
-
-    try {
-      const result: GenerationResult = JSON.parse(saved);
-
-      setGeneratedResult(result);
-
-      if (result.analysis) {
-        setAnalysisResult(result.analysis);
-      }
-
-      setKeyword(result.keyword);
-      setSelectedAngle(result.angle);
-      setPeriode(result.periode);
-
-    } catch (error) {
-      console.error("Gagal restore hasil terakhir:", error);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }, []);
 
 
   return {

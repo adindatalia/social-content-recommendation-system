@@ -1,6 +1,6 @@
 "use client";
 
-import { useContentGenerator } from "@/hooks/useContentGenerator";
+import { useGenerator } from "@/context/ContentGeneratorContext";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import SearchForm from "@/components/SearchForm";
@@ -11,8 +11,9 @@ import IdeasSection from "@/components/IdeasSection";
 import PromptDetailSection from "@/components/PromptDetailSection";
 import Toast from "@/components/Toast";
 
+
 export default function Home() {
-  const gen = useContentGenerator();
+  const gen = useGenerator();
 
   return (
     <div className="min-h-screen antialiased bg-white text-zinc-900 font-sans">

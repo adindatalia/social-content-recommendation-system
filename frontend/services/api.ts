@@ -10,6 +10,7 @@ export interface HistoryRecord {
   angle: string;
   periode: string;
   timestamp: string;
+  created_at?: string;
 }
 
 
