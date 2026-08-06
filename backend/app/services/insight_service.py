@@ -164,6 +164,7 @@ def _clean_tokens(text):
         t for t in tokens
         if len(t)>=4
         and t not in _STOPWORDS
+        and t not in _GENERIC_WORDS
     ]
 
 
