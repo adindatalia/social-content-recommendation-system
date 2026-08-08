@@ -27,6 +27,8 @@ export default function Home() {
 
         {/* 3. Search bar — satu-satunya pintu masuk generator, langsung di bawah Hero */}
         <SearchForm
+          comments={gen.comments}
+          setComments={gen.setComments}
           keyword={gen.keyword}
           setKeyword={gen.setKeyword}
           isAnalyzing={gen.isAnalyzing}
