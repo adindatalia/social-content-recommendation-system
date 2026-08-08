@@ -14,28 +14,62 @@ generate_bp = Blueprint("generate", __name__)
 @generate_bp.route("/api/generate", methods=["POST"])
 def generate():
     data = request.get_json(silent=True) or {}
+
     keyword = (data.get("keyword") or "").strip()
-    chosen_angle = data.get("angle")            # boleh None -> auto
+    chosen_angle = data.get("angle")
     periode = data.get("periode", "7")
+    raw_comments = data.get("comments")
 
     if not keyword:
-        return jsonify({"error": "keyword_required", "message": "Keyword wajib diisi"}), 400
+        return jsonify({
+            "error": "keyword_required",
+            "message": "Keyword wajib diisi"
+        }), 400
 
-    # 1. Ambil komentar sesuai keyword
-    comments = get_comments_by_keyword(keyword)
+    # ============================================================
+    # 1. Gunakan komentar dari hasil Analyze jika tersedia
+    # ============================================================
+
+    if isinstance(raw_comments, list) and raw_comments:
+        comments = [
+            {
+                "text": str(text).strip(),
+                "normalized_text": str(text).strip()
+            }
+            for text in raw_comments
+            if str(text).strip()
+        ]
+
+    else:
+        # Fallback sementara ke semantic search lama
+        comments = get_comments_by_keyword(keyword)
+
     if len(comments) == 0:
         return jsonify({
             "error": "no_data",
             "message": f"Tidak ada komentar yang cocok dengan '{keyword}'"
         }), 404
 
-    # 2. Insight: distribusi + frasa dominan per kategori sentimen (IndoBERT + ekstraksi frasa)
+    # ============================================================
+    # 2. Insight menggunakan komentar yang SAMA dengan Analyze
+    # ============================================================
+
     insight = build_insight(comments)
 
-    # 3. Strategi final (pakai pilihan user kalau ada, kalau tidak auto) + reasoning
-    strategy = resolve_strategy(insight["distribution"], chosen=chosen_angle, dominant_phrases=insight["dominant_phrases"])
+    # ============================================================
+    # 3. Tentukan strategi
+    # ============================================================
 
-    # 4. Generate ide via LLM
+    strategy = resolve_strategy(
+        insight["distribution"],
+        chosen=chosen_angle,
+        dominant_phrases=insight["dominant_phrases"]
+    )
+
+    # ============================================================
+    # 4. Generate ide menggunakan insight yang sama
+    # ============================================================
+
     try:
         ideas = generate_ideas(
             keyword=keyword,
@@ -43,13 +77,25 @@ def generate():
             dominant_phrases=insight["dominant_phrases"],
             strategy=strategy,
         )
+
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": "generation_failed", "message": str(e)}), 500
 
-    # 5. Lengkapi tiap ide dengan 'category' (= label strategi)
+        return jsonify({
+            "error": "generation_failed",
+            "message": str(e)
+        }), 500
+
+    # ============================================================
+    # 5. Tambahkan category ke setiap ide
+    # ============================================================
+
     for idea in ideas:
         idea["category"] = strategy["label"]
+
+    # ============================================================
+    # 6. Bentuk response
+    # ============================================================
 
     result = {
         "keyword": keyword,
@@ -62,10 +108,17 @@ def generate():
         "distribution": insight["distribution"],
     }
 
-    # 6. Simpan history 
+    # ============================================================
+    # 7. Simpan history
+    # ============================================================
+
     try:
-        save_history(result, strategy_key=strategy["key"])
+        save_history(
+            result,
+            strategy_key=strategy["key"]
+        )
+
     except Exception:
-        traceback.print_exc()   
+        traceback.print_exc()
 
     return jsonify(result)

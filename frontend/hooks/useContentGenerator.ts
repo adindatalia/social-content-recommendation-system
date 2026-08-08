@@ -15,8 +15,9 @@ export function useContentGenerator() {
     useState("Address Pain Point");
 
   const [keyword, setKeyword] = useState("");
-  const [comments, setComments] = useState("");
-  const [periode, setPeriode] = useState("7");
+const [comments, setComments] = useState("");
+const [lastComments, setLastComments] = useState<string[]>([]);
+const [periode, setPeriode] = useState("7");
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -97,6 +98,8 @@ export function useContentGenerator() {
         .split("\n")
         .map((text) => text.trim())
         .filter(Boolean);
+
+      setLastComments(commentList);
 
       const res = await fetch(
         "http://127.0.0.1:5000/api/analyze",
@@ -182,6 +185,7 @@ export function useContentGenerator() {
               selectedAngle ||
               analysisResult.recommended_strategy.label,
             periode,
+            comments: lastComments,
           }),
         }
       );
@@ -270,6 +274,7 @@ export function useContentGenerator() {
     setAnalysisResult(null);
     setKeyword("");
     setComments("");
+    setLastComments([]);
     setSelectedAngle("Address Pain Point");
 
     setTimeout(() => {
