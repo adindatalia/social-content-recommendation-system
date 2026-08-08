@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type {
   AnalysisResult,
   GenerationResult,
@@ -11,13 +12,17 @@ import { INITIAL_HISTORY } from "@/lib/mockData";
 import { fetchHistoryDetail } from "@/services/api";
 
 export function useContentGenerator() {
+  // ── Ambil ID history dari URL ──
+  const searchParams = useSearchParams();
+  const historyId = searchParams.get("history");
+
   const [selectedAngle, setSelectedAngle] =
     useState("Address Pain Point");
 
   const [keyword, setKeyword] = useState("");
-const [comments, setComments] = useState("");
-const [lastComments, setLastComments] = useState<string[]>([]);
-const [periode, setPeriode] = useState("7");
+  const [comments, setComments] = useState("");
+  const [lastComments, setLastComments] = useState<string[]>([]);
+  const [periode, setPeriode] = useState("7");
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,13 +37,17 @@ const [periode, setPeriode] = useState("7");
   const [history, setHistory] =
     useState<HistoryItem[]>(INITIAL_HISTORY);
 
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] =
+    useState<string | null>(null);
+
   const [notifications, setNotifications] =
     useState<Notification[]>([]);
 
   // ── Toast helper ──
   const addNotification = (text: string) => {
-    const id = Math.random().toString(36).slice(2, 11);
+    const id = Math.random()
+      .toString(36)
+      .slice(2, 11);
 
     setNotifications((prev) => [
       ...prev,
@@ -53,19 +62,29 @@ const [periode, setPeriode] = useState("7");
   };
 
   // ── Copy helper ──
-  const copyToClipboard = (id: string, text: string) => {
+  const copyToClipboard = (
+    id: string,
+    text: string
+  ) => {
     navigator.clipboard?.writeText(text);
 
     setCopiedId(id);
     addNotification("Teks berhasil disalin!");
 
-    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => {
+      setCopiedId(null);
+    }, 2000);
   };
 
   // ── Pilih topik dari chip ──
-  const selectTopicSuggestion = (topicText: string) => {
+  const selectTopicSuggestion = (
+    topicText: string
+  ) => {
     setKeyword(topicText);
-    addNotification(`Memilih topik: "${topicText}"`);
+
+    addNotification(
+      `Memilih topik: "${topicText}"`
+    );
   };
 
   // ── Aksi 1: Analisis komentar dengan IndoBERTweet ──
@@ -115,19 +134,25 @@ const [periode, setPeriode] = useState("7");
         }
       );
 
-      const data: AnalysisResult = await res.json();
+      const data: AnalysisResult =
+        await res.json();
 
       if (!res.ok) {
         throw new Error(
-          (data as unknown as { error?: string }).error ||
-            "Analisis gagal"
+          (
+            data as unknown as {
+              error?: string;
+            }
+          ).error || "Analisis gagal"
         );
       }
 
       setAnalysisResult(data);
 
       // Pre-select strategi sesuai rekomendasi sistem
-      if (data.recommended_strategy?.label) {
+      if (
+        data.recommended_strategy?.label
+      ) {
         setSelectedAngle(
           data.recommended_strategy.label
         );
@@ -135,7 +160,9 @@ const [periode, setPeriode] = useState("7");
 
       setTimeout(() => {
         document
-          .getElementById("strategy-section")
+          .getElementById(
+            "strategy-section"
+          )
           ?.scrollIntoView({
             behavior: "smooth",
           });
@@ -183,7 +210,9 @@ const [periode, setPeriode] = useState("7");
             keyword,
             angle:
               selectedAngle ||
-              analysisResult.recommended_strategy.label,
+              analysisResult
+                .recommended_strategy
+                .label,
             periode,
             comments: lastComments,
           }),
@@ -192,11 +221,13 @@ const [periode, setPeriode] = useState("7");
 
       setLoadingStep(1);
 
-      const generateData = await res.json();
+      const generateData =
+        await res.json();
 
       if (!res.ok) {
         throw new Error(
-          generateData.error || "Generate gagal"
+          generateData.error ||
+            "Generate gagal"
         );
       }
 
@@ -207,6 +238,7 @@ const [periode, setPeriode] = useState("7");
 
       setGeneratedResult(result);
 
+      // Simpan juga ke state lokal
       setHistory((prev) => [
         {
           id: Date.now().toString(),
@@ -225,7 +257,9 @@ const [periode, setPeriode] = useState("7");
 
       setTimeout(() => {
         document
-          .getElementById("ideas-section")
+          .getElementById(
+            "ideas-section"
+          )
           ?.scrollIntoView({
             behavior: "smooth",
           });
@@ -241,7 +275,7 @@ const [periode, setPeriode] = useState("7");
     }
   };
 
-  // ── Muat ulang dari riwayat ──
+  // ── Muat ulang dari history lokal ──
   const loadHistoryItem = (
     item: HistoryItem
   ) => {
@@ -261,7 +295,9 @@ const [periode, setPeriode] = useState("7");
 
     setTimeout(() => {
       document
-        .getElementById("ideas-section")
+        .getElementById(
+          "ideas-section"
+        )
         ?.scrollIntoView({
           behavior: "smooth",
         });
@@ -275,11 +311,15 @@ const [periode, setPeriode] = useState("7");
     setKeyword("");
     setComments("");
     setLastComments([]);
-    setSelectedAngle("Address Pain Point");
+    setSelectedAngle(
+      "Address Pain Point"
+    );
 
     setTimeout(() => {
       document
-        .getElementById("generator-section")
+        .getElementById(
+          "generator-section"
+        )
         ?.scrollIntoView({
           behavior: "smooth",
         });
@@ -287,28 +327,20 @@ const [periode, setPeriode] = useState("7");
   };
 
   // ── Load history dari URL ──
+  // Effect akan berjalan setiap kali historyId berubah.
+  // Jadi ketika dari History klik "Lihat Hasil",
+  // tidak perlu refresh browser.
   useEffect(() => {
-    const params = new URLSearchParams(
-      window.location.search
-    );
-
-    const historyId = params.get("history");
-
     if (!historyId) return;
-
-    // Bersihkan query setelah dibaca
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname
-    );
 
     (async () => {
       try {
         setIsGenerating(true);
 
         const data =
-          await fetchHistoryDetail(historyId);
+          await fetchHistoryDetail(
+            historyId
+          );
 
         setKeyword(data.keyword);
         setSelectedAngle(data.angle);
@@ -334,9 +366,18 @@ const [periode, setPeriode] = useState("7");
           timestamp: data.timestamp,
           ideas: data.ideas,
           analysis,
-          distribution: data.distribution,
+          distribution:
+            data.distribution ?? {
+              Negatif: 0,
+              Netral: 0,
+              Positif: 0,
+            },
           dominant_phrases:
-            data.dominant_phrase,
+            data.dominant_phrase ?? {
+              negative: [],
+              neutral: [],
+              positive: [],
+            },
           strategy:
             data.recommended_strategy,
         };
@@ -345,7 +386,9 @@ const [periode, setPeriode] = useState("7");
 
         setTimeout(() => {
           document
-            .getElementById("ideas-section")
+            .getElementById(
+              "ideas-section"
+            )
             ?.scrollIntoView({
               behavior: "smooth",
             });
@@ -353,6 +396,13 @@ const [periode, setPeriode] = useState("7");
 
         addNotification(
           `Riwayat "${data.keyword}" berhasil dimuat.`
+        );
+
+        // Bersihkan query dari URL setelah data berhasil dimuat
+        window.history.replaceState(
+          {},
+          "",
+          window.location.pathname
         );
       } catch (err) {
         console.error(err);
@@ -364,7 +414,7 @@ const [periode, setPeriode] = useState("7");
         setIsGenerating(false);
       }
     })();
-  }, []);
+  }, [historyId]);
 
   return {
     selectedAngle,
@@ -399,4 +449,4 @@ const [periode, setPeriode] = useState("7");
     resetGenerator,
     addNotification,
   };
-}
+} 

@@ -87,6 +87,13 @@ Larangan   : {cfg['larangan']}
    di atas (persentase sentimen atau frasa dominan spesifik), bukan alasan umum.
 4. Buat TEPAT 3 ide, masing-masing format berbeda: {formats_list}.
 5. Konsisten dengan strategi "{strategy['label']}" -- ikuti arahan gaya, hindari larangan.
+6. Batasi panjang output agar singkat dan mudah digunakan:
+   - hook maksimal 25 kata.
+   - body maksimal 40 kata.
+   - cta maksimal 15 kata.
+   - justification maksimal 30 kata.
+   Jangan bertele-tele, jangan mengulang informasi yang sama, dan tetap
+   gunakan data analisis yang tersedia.
 
 === FORMAT OUTPUT ===
 Balas HANYA dalam JSON valid (tanpa teks pembuka, tanpa markdown, tanpa ```).

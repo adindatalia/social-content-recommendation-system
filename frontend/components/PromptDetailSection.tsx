@@ -27,38 +27,47 @@ export default function PromptDetailSection({ result, copiedId, onCopy }: Prompt
   const [open, setOpen] = useState(false);
   const analysis = result.analysis;
 
+  const recommendedTargetSentiment =
+  analysis.recommended_strategy?.target_sentiment;
+
+  const distribution = analysis.distribution ?? {
+    Negatif: 0,
+    Netral: 0,
+    Positif: 0,
+  };
+
   const dominant: SentimentLabel =
-    analysis.recommended_strategy.target_sentiment ??
-    (analysis.distribution.Negatif >= analysis.distribution.Netral &&
-    analysis.distribution.Negatif >= analysis.distribution.Positif
+    recommendedTargetSentiment ??
+    (distribution.Negatif >= distribution.Netral &&
+    distribution.Negatif >= distribution.Positif
       ? "Negatif"
-      : analysis.distribution.Netral >= analysis.distribution.Positif
+      : distribution.Netral >= distribution.Positif
       ? "Netral"
       : "Positif");
 
-  const dominantPhrases: PhraseItem[] = analysis.dominant_phrases?.[SENTIMENT_TO_PHRASE_KEY[dominant]] ?? [];
+    const dominantPhrases: PhraseItem[] = analysis.dominant_phrases?.[SENTIMENT_TO_PHRASE_KEY[dominant]] ?? [];
 
-  const promptId = "prompt";
-  const promptText = `Role :
-  Anda adalah seorang Content Strategist bidang kesehatan.
-  Input Analisis
-  Keyword :
-  ${analysis.keyword}
-  Sentimen Dominan :
-  ${dominant}
-  Frasa Dominan :
-  ${dominantPhrases.map((p) => `• ${p.keyword}`).join("\n")}
-  Strategi Konten :
-  ${result.angle}
-  Output yang diminta :
-  1. Berikan 3 ide konten.
-  2. Setiap ide harus berisi:
-  - Judul
-  - Hook
-  - Isi
-  - CTA
-  - Hashtag
-  - Justifikasi.`;
+    const promptId = "prompt";
+    const promptText = `Role :
+    Anda adalah seorang Content Strategist bidang kesehatan.
+    Input Analisis
+    Keyword :
+    ${analysis.keyword}
+    Sentimen Dominan :
+    ${dominant}
+    Frasa Dominan :
+    ${dominantPhrases.map((p) => `• ${p.keyword}`).join("\n")}
+    Strategi Konten :
+    ${result.angle}
+    Output yang diminta :
+    1. Berikan 3 ide konten.
+    2. Setiap ide harus berisi:
+    - Judul
+    - Hook
+    - Isi
+    - CTA
+    - Hashtag
+    - Justifikasi.`;
 
   return (
     <section className="border-t border-zinc-200/80 pt-10">
