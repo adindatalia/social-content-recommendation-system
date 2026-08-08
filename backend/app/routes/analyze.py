@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 
-from app.services.insight_service import build_insight
+from app.services.insight_service import analyze_comment
 from app.services.strategy_service import resolve_strategy
-from app.services.sentiment_service import sentiment_service
+
 
 analyze_bp = Blueprint("analyze", __name__)
 
@@ -11,69 +11,78 @@ analyze_bp = Blueprint("analyze", __name__)
 def analyze():
     data = request.get_json(silent=True) or {}
 
-    keyword = (data.get("keyword") or "").strip()
-    raw_comments = data.get("comments")
+    # ============================================================
+    # 1. Ambil input
+    # ============================================================
 
-    if not keyword:
+    topic = (data.get("topic") or "").strip()
+    comment = (data.get("comment") or "").strip()
+    chosen_angle = data.get("angle")
+
+    if not topic:
         return jsonify({
-            "error": "keyword_required",
-            "message": "Keyword wajib diisi"
+            "error": "topic_required",
+            "message": "Topik wajib diisi"
         }), 400
 
-    if not isinstance(raw_comments, list) or not raw_comments:
+    if not comment:
         return jsonify({
-            "error": "comments_required",
-            "message": "Minimal satu komentar wajib diisi"
+            "error": "comment_required",
+            "message": "Komentar wajib diisi"
         }), 400
 
-    comments = [
-        {
-            "text": str(text).strip(),
-            "normalized_text": str(text).strip()
-        }
-        for text in raw_comments
-        if str(text).strip()
-    ]
+    # ============================================================
+    # 2. Analisis satu komentar dengan IndoBERTweet
+    # ============================================================
 
-    if not comments:
+    try:
+        analysis = analyze_comment(comment)
+
+    except Exception as e:
         return jsonify({
-            "error": "comments_empty",
-            "message": "Komentar tidak boleh kosong"
-        }), 400
+            "error": "analysis_failed",
+            "message": str(e)
+        }), 500
 
-    # ==================================================
-    # 1. SINGLE COMMENT
-    # ==================================================
-    if len(comments) == 1:
-        result = sentiment_service.predict_sentiment(
-            comments[0]["text"]
+    sentiment = analysis.get("sentiment")
+
+    if not sentiment:
+        return jsonify({
+            "error": "sentiment_not_found",
+            "message": "Hasil sentimen tidak ditemukan"
+        }), 500
+
+    # ============================================================
+    # 3. Tentukan strategi berdasarkan sentimen
+    # ============================================================
+
+    try:
+        strategy = resolve_strategy(
+            sentiment=sentiment,
+            chosen=chosen_angle
         )
 
+    except Exception as e:
         return jsonify({
-            "keyword": keyword,
-            "mode": "single",
-            "total_comments": 1,
-            "sentiment": result["sentiment"],
-            "probabilities": result["probabilities"],
-            "method": result["method"]
-        })
+            "error": "strategy_failed",
+            "message": str(e)
+        }), 500
 
-    # ==================================================
-    # 2. MULTIPLE COMMENTS
-    # ==================================================
-    insight = build_insight(comments)
-
-    strategy = resolve_strategy(
-        insight["distribution"],
-        chosen=None,
-        dominant_phrases=insight["dominant_phrases"]
-    )
+    # ============================================================
+    # 4. Response
+    # ============================================================
 
     return jsonify({
-        "keyword": keyword,
-        "mode": "batch",
-        "total_comments": insight["total_comments"],
-        "distribution": insight["distribution"],
-        "dominant_phrases": insight["dominant_phrases"],
-        "recommended_strategy": strategy
+        "topic": topic,
+        "comment": comment,
+
+        "sentiment": analysis["sentiment"],
+        "confidence": analysis["confidence"],
+        "probabilities": analysis["probabilities"],
+        "method": analysis["method"],
+
+        "strategy": strategy,
+        "recommended_strategy": strategy,
+
+        "mode": "single"
     })

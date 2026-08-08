@@ -1,116 +1,249 @@
+
 _STRATEGY_TONE = {
     "address_pain_point": {
         "arahan": (
-            "Fokus menjawab keluhan publik secara spesifik. Tunjukkan empati "
-            "di awal, lalu berikan solusi/tindakan konkret. Bangun kepercayaan."
+            "Fokus menjawab keluhan yang terdapat pada komentar secara spesifik. "
+            "Tunjukkan empati di awal, lalu berikan solusi atau tindakan konkret. "
+            "Bangun kepercayaan."
         ),
         "larangan": (
-            "DILARANG membuat konten promosi/testimoni positif. DILARANG "
-            "mengabaikan pain point yang tersedia. DILARANG menyalahkan pasien."
+            "DILARANG membuat konten promosi atau testimoni positif. "
+            "DILARANG mengabaikan keluhan pada komentar. "
+            "DILARANG menyalahkan pasien."
         ),
     },
+
     "edukasi_informatif": {
         "arahan": (
-            "Fokus edukasi. Jelaskan prosedur, biaya, atau regulasi dengan "
-            "bahasa sederhana. Netral, informatif, dan terpercaya."
+            "Fokus pada edukasi berdasarkan konteks komentar. "
+            "Jelaskan informasi yang relevan dengan bahasa sederhana, "
+            "netral, informatif, dan terpercaya."
         ),
         "larangan": (
-            "DILARANG menggunakan gaya clickbait atau bombastis. DILARANG "
-            "membuat konten yang terkesan menjual/promosi. Gunakan bahasa formal."
+            "DILARANG menggunakan gaya clickbait atau bombastis. "
+            "DILARANG membuat konten yang terkesan menjual atau promosi."
         ),
     },
+
     "showcase_positif": {
         "arahan": (
-            "Fokus mengangkat pengalaman positif dan testimoni. Tunjukkan sisi "
-            "baik layanan. Inspiratif dan meyakinkan, tapi tetap kredibel."
+            "Fokus mengangkat pengalaman positif yang tercermin dalam komentar. "
+            "Tunjukkan sisi baik layanan secara inspiratif dan meyakinkan, "
+            "tetapi tetap kredibel."
         ),
         "larangan": (
-            "DILARANG membahas keluhan/pain point. DILARANG terkesan "
-            "berlebihan atau tidak realistis (hindari superlatif kosong)."
+            "DILARANG membuat klaim berlebihan atau tidak realistis. "
+            "DILARANG menggunakan superlatif kosong."
         ),
     },
 }
 
-_FORMATS = ["OPSI 1", "OPSI 2", "OPSI 3"]
 
-_SENTIMENT_TO_PHRASE_KEY = {"Negatif": "negative", "Netral": "neutral", "Positif": "positive"}
+_FORMATS = [
+    "OPSI 1",
+    "OPSI 2",
+    "OPSI 3",
+]
 
 
-def build_prompt(keyword: str, distribution: dict, dominant_phrases: dict, strategy: dict) -> str:
-    dist_text = ", ".join(f"{k}: {v}%" for k, v in distribution.items())
+def build_prompt(
+    topic: str,
+    comment: str,
+    sentiment: str,
+    strategy: dict
+) -> str:
 
-    # Pilih daftar frasa sesuai kategori sentimen target strategi yang aktif
-    # (Negatif utk Address Pain Point, Netral utk Edukasi Informatif, Positif
-    # utk Showcase Positif) -- dominant_phrases sudah berisi ketiga kategori
-    # dari insight_service, jadi di sini cuma memilih, bukan menghitung ulang.
-    phrase_key = _SENTIMENT_TO_PHRASE_KEY.get(strategy.get("target_sentiment"), "negative")
-    phrases = (dominant_phrases or {}).get(phrase_key) or []
+    cfg = _STRATEGY_TONE.get(
+        strategy.get("key"),
+        _STRATEGY_TONE["edukasi_informatif"]
+    )
 
-    if phrases:
-        pains = "\n".join(f"{i+1}. {p['keyword']} (muncul {p['count']}x)"
-                           for i, p in enumerate(phrases))
-        pain_instruction = (
-            f"WAJIB: pilih SATU frasa dominan BERBEDA dari daftar di atas untuk "
-            f"setiap ide (total {len(phrases)} frasa tersedia, buat 3 ide "
-            f"dari frasa yang berlainan bila memungkinkan). Sebutkan frasa "
-            f"tersebut secara eksplisit di bagian hook atau body -- jangan "
-            f"hanya menyinggung secara implisit."
-        )
-    else:
-        pains = "(tidak ada frasa dominan spesifik terdeteksi dari data)"
-        pain_instruction = (
-            "Karena tidak ada frasa dominan spesifik, fokuskan ide pada tema umum "
-            "sesuai strategi dan kata kunci."
-        )
-
-    cfg = _STRATEGY_TONE.get(strategy["key"], _STRATEGY_TONE["edukasi_informatif"])
     formats_list = ", ".join(_FORMATS)
 
-    return f"""Kamu adalah content strategist untuk institusi kesehatan.
-Tugasmu membuat 3 ide konten media sosial berdasarkan DATA ANALISIS SENTIMEN PUBLIK berikut. Setiap ide WAJIB berbasis data ini, BUKAN pengetahuan umum tentang topik kesehatan.
+    return f"""
+Kamu adalah content strategist untuk institusi kesehatan.
 
-=== DATA ANALISIS (WAJIB DIPAKAI) ===
-Kata kunci   : "{keyword}"
-Distribusi sentimen publik: {dist_text}
-Frasa dominan yang terdeteksi:
-{pains}
+Tugasmu membuat 3 ide konten media sosial berdasarkan SATU komentar
+pengguna dan hasil analisis sentimen dari model IndoBERTweet.
 
-=== STRATEGI KONTEN: {strategy['label']} ===
-Arahan gaya: {cfg['arahan']}
-Larangan   : {cfg['larangan']}
+Komentar pengguna adalah sumber konteks utama. Setiap ide harus
+berhubungan langsung dengan isi komentar dan topik yang diberikan.
+
+=== DATA ANALISIS ===
+
+Topik:
+"{topic}"
+
+Komentar pengguna:
+"{comment}"
+
+Hasil klasifikasi sentimen IndoBERTweet:
+"{sentiment}"
+
+PENTING:
+- Sentimen di atas adalah hasil klasifikasi sistem.
+- Jangan melakukan klasifikasi sentimen ulang.
+- Jangan mengubah sentimen tersebut.
+- Jangan menggunakan confidence score atau probabilitas model.
+- Jangan mengarang data tambahan yang tidak terdapat pada komentar.
+- Jangan menganggap komentar ini sebagai representasi seluruh publik.
+- Jangan membuat klaim berdasarkan kumpulan komentar atau distribusi sentimen.
+
+=== STRATEGI KONTEN ===
+
+Strategi:
+"{strategy["label"]}"
+
+Target sentimen:
+"{strategy["target_sentiment"]}"
+
+Arahan:
+{cfg["arahan"]}
+
+Larangan:
+{cfg["larangan"]}
 
 === ATURAN WAJIB ===
-1. {pain_instruction}
-2. DILARANG membuat ide generik yang bisa dipakai untuk topik kesehatan apa pun.
-   Setiap ide harus terasa SPESIFIK untuk kata kunci "{keyword}" dan data di atas.
-3. Bagian "justification" WAJIB menyebutkan angka/data konkret dari analisis
-   di atas (persentase sentimen atau frasa dominan spesifik), bukan alasan umum.
-4. Buat TEPAT 3 ide, masing-masing format berbeda: {formats_list}.
-5. Konsisten dengan strategi "{strategy['label']}" -- ikuti arahan gaya, hindari larangan.
-6. Batasi panjang output agar singkat dan mudah digunakan:
-   - hook maksimal 25 kata.
-   - body maksimal 40 kata.
-   - cta maksimal 15 kata.
-   - justification maksimal 30 kata.
-   Jangan bertele-tele, jangan mengulang informasi yang sama, dan tetap
-   gunakan data analisis yang tersedia.
+
+1. SETIAP ide wajib merespons isi komentar secara spesifik.
+
+2. Jika komentar berisi keluhan atau pengalaman tertentu, gunakan
+   detail keluhan tersebut sebagai dasar ide.
+
+3. Jangan mengganti konteks komentar dengan masalah kesehatan umum.
+
+4. Jangan membuat ide generik yang dapat digunakan untuk semua klinik,
+   rumah sakit, atau institusi kesehatan.
+
+5. Gunakan detail konkret dari komentar jika relevan.
+   Contohnya, jika komentar menyebut "menunggu hampir 2 jam",
+   maka detail waktu tunggu tersebut boleh digunakan dalam hook,
+   body, atau justification.
+
+6. Jangan mengarang fakta operasional yang tidak diberikan.
+   Jangan mengatakan bahwa klinik telah menambah tenaga medis,
+   menggunakan sistem antrean digital, melakukan evaluasi,
+   atau melakukan tindakan tertentu kecuali hal tersebut memang
+   disebutkan dalam komentar atau diberikan oleh sistem.
+
+7. Jika memberikan solusi, gunakan bentuk saran atau rekomendasi
+   yang realistis, bukan klaim bahwa institusi sudah melakukan
+   tindakan tertentu.
+
+8. Konsisten dengan strategi "{strategy["label"]}".
+
+9. Setiap ide harus memiliki pendekatan yang berbeda, tetapi tetap
+   berasal dari komentar yang sama.
+
+10. Buat TEPAT 3 ide dengan format berbeda:
+    {formats_list}
+
+11. Batas panjang:
+    - title maksimal 70 karakter
+    - hook maksimal 25 kata
+    - body maksimal 40 kata
+    - cta maksimal 15 kata
+    - justification maksimal 30 kata
+
+12. Bagian "justification" WAJIB menjelaskan:
+    - masalah atau konteks dari komentar,
+    - sentimen yang diberikan sistem,
+    - hubungan dengan topik,
+    - dan alasan strategi tersebut sesuai.
+
+13. Jangan menyebut confidence score atau probabilitas dalam
+    justification.
+
+14. Jangan mengarang angka, statistik, jumlah pasien, persentase,
+    atau fakta lain yang tidak terdapat dalam komentar.
+
+15. Hashtag maksimal 5 dan harus relevan dengan topik serta isi komentar.
+
+=== GAYA KONTEN ===
+
+Buat ide yang terasa seperti konten media sosial yang benar-benar
+bisa digunakan oleh institusi kesehatan.
+
+Untuk strategi Address Pain Point:
+- mulai dengan empati terhadap keluhan;
+- angkat masalah secara jelas;
+- berikan edukasi, saran, atau langkah konkret;
+- jangan menyalahkan pasien;
+- jangan membuat janji atau klaim bahwa institusi sudah melakukan
+  sesuatu jika tidak ada informasinya.
+
+Untuk strategi Edukasi Informatif:
+- gunakan komentar sebagai konteks masalah;
+- ubah masalah menjadi edukasi yang mudah dipahami;
+- tetap netral dan informatif;
+- jangan membuat klaim promosi.
+
+Untuk strategi Showcase Positif:
+- gunakan pengalaman positif yang benar-benar terdapat dalam komentar;
+- tonjolkan aspek positif yang relevan;
+- jangan menambahkan pengalaman positif yang tidak disebutkan;
+- hindari klaim berlebihan.
 
 === FORMAT OUTPUT ===
-Balas HANYA dalam JSON valid (tanpa teks pembuka, tanpa markdown, tanpa ```).
+
+Balas HANYA dalam JSON valid.
+
+Tanpa teks pembuka.
+Tanpa markdown.
+Tanpa ```.
 
 {{
-  "ideas": [
-    {{
-      "title": "judul menarik, maksimal 70 karakter",
-      "format": "OPSI 1",
-      "hook": "kalimat pembuka yang menyebutkan frasa dominan/data secara eksplisit",
-      "body": "isi/script konten, 2-4 kalimat, actionable, spesifik ke data",
-      "cta": "call to action yang jelas",
-      "hashtags": ["tanpatandapagar", "maksimal5", "relevan"],
-      "justification": "alasan berbasis DATA KONKRET di atas (sebutkan angka/frasa dominan spesifik)"
-    }}
-  ]
+    "ideas": [
+        {{
+            "title": "judul menarik dan spesifik",
+            "format": "OPSI 1",
+            "hook": "kalimat pembuka yang relevan langsung dengan komentar",
+            "body": "isi atau script konten yang spesifik, relevan, dan actionable",
+            "cta": "call to action yang jelas",
+            "hashtags": [
+                "maksimal5",
+                "relevan",
+                "dengan",
+                "topik"
+            ],
+            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+        }},
+        {{
+            "title": "judul berbeda dari ide pertama",
+            "format": "OPSI 2",
+            "hook": "kalimat pembuka dengan pendekatan berbeda",
+            "body": "isi atau script konten dengan pendekatan berbeda",
+            "cta": "call to action yang jelas",
+            "hashtags": [
+                "maksimal5",
+                "relevan",
+                "dengan",
+                "topik"
+            ],
+            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+        }},
+        {{
+            "title": "judul berbeda dari ide sebelumnya",
+            "format": "OPSI 3",
+            "hook": "kalimat pembuka dengan pendekatan berbeda",
+            "body": "isi atau script konten dengan pendekatan berbeda",
+            "cta": "call to action yang jelas",
+            "hashtags": [
+                "maksimal5",
+                "relevan",
+                "dengan",
+                "topik"
+            ],
+            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+        }}
+    ]
 }}
 
-Pastikan ada TEPAT 3 objek di "ideas", satu untuk tiap format: {formats_list}.
-Gunakan Bahasa Indonesia yang natural."""
+Pastikan terdapat TEPAT 3 objek dalam "ideas":
+- satu dengan format "OPSI 1"
+- satu dengan format "OPSI 2"
+- satu dengan format "OPSI 3"
+
+Gunakan Bahasa Indonesia yang natural, jelas, dan cocok untuk
+konten media sosial institusi kesehatan.
+""".strip()

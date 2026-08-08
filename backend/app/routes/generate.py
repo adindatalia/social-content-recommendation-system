@@ -1,12 +1,13 @@
 from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 import traceback
 
-from app.services.keyword_service import get_comments_by_keyword
-from app.services.insight_service import build_insight
+from app.services.insight_service import analyze_comment
 from app.services.strategy_service import resolve_strategy
 from app.services.llm_service import generate_ideas
 from app.services.history_service import save_history
+
 
 generate_bp = Blueprint("generate", __name__)
 
@@ -15,67 +16,97 @@ generate_bp = Blueprint("generate", __name__)
 def generate():
     data = request.get_json(silent=True) or {}
 
-    keyword = (data.get("keyword") or "").strip()
+    # ============================================================
+    # 1. Ambil input
+    # ============================================================
+
+    topic = (data.get("topic") or "").strip()
+    comment = (data.get("comment") or "").strip()
     chosen_angle = data.get("angle")
     periode = data.get("periode", "7")
-    raw_comments = data.get("comments")
 
-    if not keyword:
+    if not topic:
         return jsonify({
-            "error": "keyword_required",
-            "message": "Keyword wajib diisi"
+            "error": "topic_required",
+            "message": "Topik wajib diisi"
+        }), 400
+
+    if not comment:
+        return jsonify({
+            "error": "comment_required",
+            "message": "Komentar wajib diisi"
         }), 400
 
     # ============================================================
-    # 1. Gunakan komentar dari hasil Analyze jika tersedia
+    # 2. Analisis satu komentar menggunakan IndoBERTweet
+    #
+    # Hasil:
+    # - sentiment
+    # - confidence
+    # - probabilities
+    # - method
     # ============================================================
 
-    if isinstance(raw_comments, list) and raw_comments:
-        comments = [
-            {
-                "text": str(text).strip(),
-                "normalized_text": str(text).strip()
-            }
-            for text in raw_comments
-            if str(text).strip()
-        ]
+    try:
+        analysis = analyze_comment(comment)
 
-    else:
-        # Fallback sementara ke semantic search lama
-        comments = get_comments_by_keyword(keyword)
+    except Exception as e:
+        traceback.print_exc()
 
-    if len(comments) == 0:
         return jsonify({
-            "error": "no_data",
-            "message": f"Tidak ada komentar yang cocok dengan '{keyword}'"
-        }), 404
+            "error": "analysis_failed",
+            "message": str(e)
+        }), 500
+
+    sentiment = analysis.get("sentiment")
+
+    if not sentiment:
+        return jsonify({
+            "error": "sentiment_not_found",
+            "message": "Hasil sentimen tidak ditemukan"
+        }), 500
 
     # ============================================================
-    # 2. Insight menggunakan komentar yang SAMA dengan Analyze
+    # 3. Tentukan strategi berdasarkan hasil sentimen
+    #
+    # IndoBERTweet → sentiment
+    # sentiment → strategy rule
+    #
+    # Confidence TIDAK digunakan untuk menentukan strategi.
     # ============================================================
 
-    insight = build_insight(comments)
+    try:
+        strategy = resolve_strategy(
+            sentiment=sentiment,
+            chosen=chosen_angle
+        )
+
+    except Exception as e:
+        traceback.print_exc()
+
+        return jsonify({
+            "error": "strategy_failed",
+            "message": str(e)
+        }), 500
 
     # ============================================================
-    # 3. Tentukan strategi
-    # ============================================================
-
-    strategy = resolve_strategy(
-        insight["distribution"],
-        chosen=chosen_angle,
-        dominant_phrases=insight["dominant_phrases"]
-    )
-
-    # ============================================================
-    # 4. Generate ide menggunakan insight yang sama
+    # 4. Generate ide dengan LLM
+    #
+    # LLM menerima:
+    # - topic
+    # - comment
+    # - sentiment
+    # - strategy
+    #
+    # Confidence dan probabilities TIDAK dikirim ke LLM.
     # ============================================================
 
     try:
         ideas = generate_ideas(
-            keyword=keyword,
-            distribution=insight["distribution"],
-            dominant_phrases=insight["dominant_phrases"],
-            strategy=strategy,
+            topic=topic,
+            comment=comment,
+            sentiment=sentiment,
+            strategy=strategy
         )
 
     except Exception as e:
@@ -98,14 +129,33 @@ def generate():
     # ============================================================
 
     result = {
-        "keyword": keyword,
+        "topic": topic,
+        "comment": comment,
+
+        # Hasil klasifikasi IndoBERTweet
+        "sentiment": sentiment,
+        "confidence": analysis.get("confidence"),
+        "probabilities": analysis.get(
+            "probabilities",
+            {}
+        ),
+        "method": analysis.get(
+            "method",
+            "IndoBERT"
+        ),
+
+        # Hasil strategy rule
         "angle": strategy["label"],
-        "periode": periode,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "ideas": ideas,
         "strategy": strategy,
-        "dominant_phrase": insight["dominant_phrases"],
-        "distribution": insight["distribution"],
+
+        # Metadata
+        "periode": periode,
+        "timestamp": datetime.now().isoformat(
+            timespec="seconds"
+        ),
+
+        # Hasil LLM
+        "ideas": ideas,
     }
 
     # ============================================================
