@@ -2,31 +2,87 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+
 import type {
   AnalysisResult,
   GenerationResult,
   HistoryItem,
   Notification,
+  Sentiment,
+  SentimentProbabilities,
+  RecommendedStrategy,
+  GeneratedIdea,
 } from "@/lib/types";
-import { INITIAL_HISTORY } from "@/lib/mockData";
+
 import { fetchHistoryDetail } from "@/services/api";
 
+// ============================================================
+// API RESPONSE TYPE
+// ============================================================
+
+interface HistoryApiResponse {
+  id: number | string;
+
+  topic?: string;
+  keyword?: string;
+
+  comment?: string;
+
+  sentiment?: Sentiment;
+
+  confidence?: number | null;
+
+  probabilities?: SentimentProbabilities | null;
+
+  method?: string;
+
+  dominant_phrase?: string | null;
+
+  angle?: string;
+
+  periode?: string;
+
+  timestamp?: string;
+
+  created_at?: string;
+
+  strategy?: RecommendedStrategy;
+
+  recommended_strategy?: RecommendedStrategy;
+
+  ideas?: GeneratedIdea[];
+}
+
+// ============================================================
+// HOOK
+// ============================================================
+
 export function useContentGenerator() {
-  // ── Ambil ID history dari URL ──
   const searchParams = useSearchParams();
+
   const historyId = searchParams.get("history");
+
+  // ============================================================
+  // STATE
+  // ============================================================
 
   const [selectedAngle, setSelectedAngle] =
     useState("Address Pain Point");
 
-  const [keyword, setKeyword] = useState("");
-  const [comments, setComments] = useState("");
-  const [lastComments, setLastComments] = useState<string[]>([]);
-  const [periode, setPeriode] = useState("7");
+  const [topic, setTopic] =
+    useState("");
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [comments, setComments] =
+    useState("");
+
+  const [isAnalyzing, setIsAnalyzing] =
+    useState(false);
+
+  const [isGenerating, setIsGenerating] =
+    useState(false);
+
+  const [loadingStep, setLoadingStep] =
+    useState(0);
 
   const [analysisResult, setAnalysisResult] =
     useState<AnalysisResult | null>(null);
@@ -34,16 +90,16 @@ export function useContentGenerator() {
   const [generatedResult, setGeneratedResult] =
     useState<GenerationResult | null>(null);
 
-  const [history, setHistory] =
-    useState<HistoryItem[]>(INITIAL_HISTORY);
-
   const [copiedId, setCopiedId] =
     useState<string | null>(null);
 
   const [notifications, setNotifications] =
     useState<Notification[]>([]);
 
-  // ── Toast helper ──
+  // ============================================================
+  // NOTIFICATION
+  // ============================================================
+
   const addNotification = (text: string) => {
     const id = Math.random()
       .toString(36)
@@ -51,7 +107,10 @@ export function useContentGenerator() {
 
     setNotifications((prev) => [
       ...prev,
-      { id, text },
+      {
+        id,
+        text,
+      },
     ]);
 
     setTimeout(() => {
@@ -61,7 +120,10 @@ export function useContentGenerator() {
     }, 3000);
   };
 
-  // ── Copy helper ──
+  // ============================================================
+  // COPY
+  // ============================================================
+
   const copyToClipboard = (
     id: string,
     text: string
@@ -69,94 +131,153 @@ export function useContentGenerator() {
     navigator.clipboard?.writeText(text);
 
     setCopiedId(id);
-    addNotification("Teks berhasil disalin!");
+
+    addNotification(
+      "Teks berhasil disalin!"
+    );
 
     setTimeout(() => {
       setCopiedId(null);
     }, 2000);
   };
 
-  // ── Pilih topik dari chip ──
+  // ============================================================
+  // TOPIC SUGGESTION
+  // ============================================================
+
   const selectTopicSuggestion = (
     topicText: string
   ) => {
-    setKeyword(topicText);
+    setTopic(topicText);
 
     addNotification(
       `Memilih topik: "${topicText}"`
     );
   };
 
-  // ── Aksi 1: Analisis komentar dengan IndoBERTweet ──
+  // ============================================================
+  // ANALYZE
+  // ============================================================
+
   const handleAnalyze = async (
-    e?: { preventDefault?: () => void }
+    e?: {
+      preventDefault?: () => void;
+    }
   ) => {
     e?.preventDefault?.();
 
-    if (!keyword.trim()) {
+    const topicValue =
+      topic.trim();
+
+    const commentValue =
+      comments.trim();
+
+    if (!topicValue) {
       addNotification(
-        "Silakan masukkan keyword terlebih dahulu!"
+        "Silakan masukkan topik terlebih dahulu!"
       );
+
       return null;
     }
 
-    if (!comments.trim()) {
+    if (!commentValue) {
       addNotification(
-        "Silakan masukkan minimal satu komentar!"
+        "Silakan masukkan komentar terlebih dahulu!"
       );
+
       return null;
     }
 
-    // Analisis baru dimulai
     setGeneratedResult(null);
+    setAnalysisResult(null);
     setIsAnalyzing(true);
 
     try {
-      // Satu baris = satu komentar
-      const commentList = comments
-        .split("\n")
-        .map((text) => text.trim())
-        .filter(Boolean);
-
-      setLastComments(commentList);
-
       const res = await fetch(
         "http://127.0.0.1:5000/api/analyze",
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
-            keyword,
-            comments: commentList,
+            topic: topicValue,
+            comment: commentValue,
           }),
         }
       );
 
-      const data: AnalysisResult =
+      const data =
         await res.json();
 
       if (!res.ok) {
         throw new Error(
-          (
-            data as unknown as {
-              error?: string;
-            }
-          ).error || "Analisis gagal"
+          data?.message ||
+            data?.error ||
+            "Analisis gagal"
         );
       }
 
-      setAnalysisResult(data);
+      // ========================================================
+      // BENTUK ANALYSIS RESULT
+      // ========================================================
 
-      // Pre-select strategi sesuai rekomendasi sistem
+      const analysis: AnalysisResult = {
+        keyword:
+          data.topic ??
+          topicValue,
+
+        mode: "single",
+
+        total_comments: 1,
+
+        sentiment:
+          data.sentiment,
+
+        confidence:
+          data.confidence ??
+          null,
+
+        probabilities:
+          data.probabilities ??
+          null,
+
+        method:
+          data.method ??
+          "IndoBERTweet",
+
+        dominant_phrase:
+          data.dominant_phrase ??
+          null,
+
+        recommended_strategy:
+          data.recommended_strategy ??
+          undefined,
+      };
+
+      setAnalysisResult(
+        analysis
+      );
+
+      // ========================================================
+      // SET STRATEGI REKOMENDASI
+      // ========================================================
+
       if (
-        data.recommended_strategy?.label
+        data.recommended_strategy
+          ?.label
       ) {
         setSelectedAngle(
           data.recommended_strategy.label
         );
       }
+
+      // ========================================================
+      // SCROLL
+      // ========================================================
 
       setTimeout(() => {
         document
@@ -170,10 +291,15 @@ export function useContentGenerator() {
 
       return data;
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Analyze error:",
+        err
+      );
 
       addNotification(
-        "Backend gagal dihubungi saat menganalisis."
+        err instanceof Error
+          ? err.message
+          : "Backend gagal dihubungi saat menganalisis."
       );
 
       return null;
@@ -182,17 +308,40 @@ export function useContentGenerator() {
     }
   };
 
-  // ── Aksi 2: Generate ide konten ──
+  // ============================================================
+  // GENERATE IDE
+  // ============================================================
+
   const handleGenerateIdeas = async (
-    e?: { preventDefault?: () => void }
+    e?: {
+      preventDefault?: () => void;
+    }
   ) => {
     e?.preventDefault?.();
 
     if (!analysisResult) {
       addNotification(
-        "Jalankan analisis topik terlebih dahulu."
+        "Jalankan analisis terlebih dahulu."
       );
-      return;
+
+      return null;
+    }
+
+    const topicValue =
+      topic.trim();
+
+    const commentValue =
+      comments.trim();
+
+    if (
+      !topicValue ||
+      !commentValue
+    ) {
+      addNotification(
+        "Topik dan komentar wajib tersedia."
+      );
+
+      return null;
     }
 
     try {
@@ -203,18 +352,16 @@ export function useContentGenerator() {
         "http://127.0.0.1:5000/api/generate",
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
-            keyword,
-            angle:
-              selectedAngle ||
-              analysisResult
-                .recommended_strategy
-                .label,
-            periode,
-            comments: lastComments,
+            topic: topicValue,
+            comment: commentValue,
+            angle: selectedAngle,
           }),
         }
       );
@@ -226,34 +373,81 @@ export function useContentGenerator() {
 
       if (!res.ok) {
         throw new Error(
-          generateData.error ||
+          generateData?.message ||
+            generateData?.error ||
             "Generate gagal"
         );
       }
 
+      // ========================================================
+      // GENERATION RESULT
+      // ========================================================
+
       const result: GenerationResult = {
-        ...generateData,
-        analysis: analysisResult,
+        topic:
+          generateData.topic ??
+          topicValue,
+
+        comment:
+          generateData.comment ??
+          commentValue,
+
+        sentiment:
+          generateData.sentiment,
+
+        confidence:
+          generateData.confidence ??
+          null,
+
+        angle:
+          generateData.angle ??
+          selectedAngle,
+
+        timestamp:
+          generateData.timestamp ??
+          new Date().toISOString(),
+
+        ideas:
+          generateData.ideas ??
+          [],
+
+        strategy:
+          generateData.strategy ??
+          generateData.recommended_strategy ??
+          {
+            key: "",
+            label:
+              generateData.angle ??
+              selectedAngle,
+          },
+
+        probabilities:
+          generateData.probabilities ??
+          null,
+
+        method:
+          generateData.method ??
+          "IndoBERTweet",
+
+        dominant_phrase:
+          generateData.dominant_phrase ??
+          null,
+
+        analysis:
+          analysisResult,
       };
 
-      setGeneratedResult(result);
-
-      // Simpan juga ke state lokal
-      setHistory((prev) => [
-        {
-          id: Date.now().toString(),
-          keyword,
-          angle: generateData.angle,
-          periode,
-          timestamp: generateData.timestamp,
-          result,
-        },
-        ...prev,
-      ]);
+      setGeneratedResult(
+        result
+      );
 
       addNotification(
         "Ide konten berhasil dibuat!"
       );
+
+      // ========================================================
+      // SCROLL KE IDE
+      // ========================================================
 
       setTimeout(() => {
         document
@@ -264,33 +458,62 @@ export function useContentGenerator() {
             behavior: "smooth",
           });
       }, 300);
+
+      return result;
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Generate error:",
+        err
+      );
 
       addNotification(
-        "Backend gagal dihubungi saat generate ide."
+        err instanceof Error
+          ? err.message
+          : "Backend gagal dihubungi saat generate ide."
       );
+
+      return null;
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // ── Muat ulang dari history lokal ──
+  // ============================================================
+  // LOAD HISTORY ITEM MANUAL
+  // ============================================================
+
   const loadHistoryItem = (
     item: HistoryItem
   ) => {
-    setKeyword(item.keyword);
-    setSelectedAngle(item.angle);
-    setPeriode(item.periode);
+    const historyTopic =
+      item.topic ??
+      "";
 
-    setAnalysisResult(
-      item.result.analysis
+    setTopic(
+      historyTopic
     );
 
-    setGeneratedResult(item.result);
+    setComments(
+      item.comment ??
+      ""
+    );
+
+    setSelectedAngle(
+      item.angle ??
+      "Address Pain Point"
+    );
+
+    setAnalysisResult(
+      item.result.analysis ??
+      null
+    );
+
+    setGeneratedResult(
+      item.result
+    );
 
     addNotification(
-      `Memuat riwayat: "${item.keyword}"`
+      `Memuat riwayat: "${historyTopic}"`
     );
 
     setTimeout(() => {
@@ -304,13 +527,19 @@ export function useContentGenerator() {
     }, 150);
   };
 
-  // ── Reset ──
+  // ============================================================
+  // RESET
+  // ============================================================
+
   const resetGenerator = () => {
     setGeneratedResult(null);
+
     setAnalysisResult(null);
-    setKeyword("");
+
+    setTopic("");
+
     setComments("");
-    setLastComments([]);
+
     setSelectedAngle(
       "Address Pain Point"
     );
@@ -326,108 +555,239 @@ export function useContentGenerator() {
     }, 50);
   };
 
-  // ── Load history dari URL ──
-  // Effect akan berjalan setiap kali historyId berubah.
-  // Jadi ketika dari History klik "Lihat Hasil",
-  // tidak perlu refresh browser.
+  // ============================================================
+  // LOAD HISTORY FROM DATABASE
+  // ============================================================
+
   useEffect(() => {
-    if (!historyId) return;
+    if (!historyId) {
+      return;
+    }
 
-    (async () => {
-      try {
-        setIsGenerating(true);
-
-        const data =
-          await fetchHistoryDetail(
-            historyId
+    const loadHistory =
+      async () => {
+        try {
+          setIsGenerating(
+            true
           );
 
-        setKeyword(data.keyword);
-        setSelectedAngle(data.angle);
-        setPeriode(data.periode);
+          // ====================================================
+          // FETCH DETAIL HISTORY
+          // ====================================================
 
-        const analysis: AnalysisResult = {
-          keyword: data.keyword,
-          distribution:
-            data.distribution ?? {},
-          dominant_phrases:
-            data.dominant_phrase ?? {},
-          recommended_strategy:
-            data.recommended_strategy ?? {},
-          total_comments: 0,
-        };
+          const data =
+            (await fetchHistoryDetail(
+              historyId
+            )) as HistoryApiResponse;
 
-        setAnalysisResult(analysis);
+          // ====================================================
+          // INPUT
+          // ====================================================
 
-        const result: GenerationResult = {
-          keyword: data.keyword,
-          angle: data.angle,
-          periode: data.periode,
-          timestamp: data.timestamp,
-          ideas: data.ideas,
-          analysis,
-          distribution:
-            data.distribution ?? {
-              Negatif: 0,
-              Netral: 0,
-              Positif: 0,
-            },
-          dominant_phrases:
-            data.dominant_phrase ?? {
-              negative: [],
-              neutral: [],
-              positive: [],
-            },
-          strategy:
-            data.recommended_strategy,
-        };
+          const historyTopic =
+            data.topic ??
+            data.keyword ??
+            "";
 
-        setGeneratedResult(result);
+          const historyComment =
+            data.comment ??
+            "";
 
-        setTimeout(() => {
-          document
-            .getElementById(
-              "ideas-section"
-            )
-            ?.scrollIntoView({
-              behavior: "smooth",
-            });
-        }, 300);
+          // ====================================================
+          // STRATEGY
+          // ====================================================
 
-        addNotification(
-          `Riwayat "${data.keyword}" berhasil dimuat.`
-        );
+          const strategy =
+            data.strategy ??
+            data.recommended_strategy ??
+            {
+              key: "",
+              label:
+                data.angle ??
+                "Address Pain Point",
+            };
 
-        // Bersihkan query dari URL setelah data berhasil dimuat
-        window.history.replaceState(
-          {},
-          "",
-          window.location.pathname
-        );
-      } catch (err) {
-        console.error(err);
+          // ====================================================
+          // ANALYSIS RESULT
+          // ====================================================
 
-        addNotification(
-          "Gagal memuat riwayat."
-        );
-      } finally {
-        setIsGenerating(false);
-      }
-    })();
+          const analysis: AnalysisResult = {
+            keyword:
+              historyTopic,
+
+            mode: "single",
+
+            total_comments: 1,
+
+            sentiment:
+              data.sentiment,
+
+            confidence:
+              data.confidence ??
+              null,
+
+            probabilities:
+              data.probabilities ??
+              null,
+
+            method:
+              data.method ??
+              "IndoBERTweet",
+
+            dominant_phrase:
+              data.dominant_phrase ??
+              null,
+
+            recommended_strategy:
+              data.recommended_strategy ??
+              strategy,
+          };
+
+          // ====================================================
+          // SET INPUT
+          // ====================================================
+
+          setTopic(
+            historyTopic
+          );
+
+          setComments(
+            historyComment
+          );
+
+          // ====================================================
+          // SET ANGLE
+          // ====================================================
+
+          setSelectedAngle(
+            data.angle ??
+            strategy.label ??
+            "Address Pain Point"
+          );
+
+          // ====================================================
+          // SET ANALYSIS
+          // ====================================================
+
+          setAnalysisResult(
+            analysis
+          );
+
+          // ====================================================
+          // SET GENERATION RESULT
+          // ====================================================
+
+          const result: GenerationResult = {
+            topic:
+              historyTopic,
+
+            comment:
+              historyComment,
+
+            sentiment:
+              data.sentiment ??
+              "Netral",
+
+            confidence:
+              data.confidence ??
+              null,
+
+            angle:
+              data.angle ??
+              strategy.label ??
+              "Address Pain Point",
+
+            timestamp:
+              data.timestamp ??
+              data.created_at ??
+              new Date().toISOString(),
+
+            ideas:
+              data.ideas ??
+              [],
+
+            strategy:
+              strategy,
+
+            probabilities:
+              data.probabilities ??
+              null,
+
+            method:
+              data.method ??
+              "IndoBERTweet",
+
+            dominant_phrase:
+              data.dominant_phrase ??
+              null,
+
+            analysis:
+              analysis,
+          };
+
+          setGeneratedResult(
+            result
+          );
+
+          // ====================================================
+          // SCROLL KE HASIL
+          // ====================================================
+
+          setTimeout(() => {
+            document
+              .getElementById(
+                "ideas-section"
+              )
+              ?.scrollIntoView({
+                behavior: "smooth",
+              });
+          }, 300);
+
+          addNotification(
+            `Riwayat "${historyTopic}" berhasil dimuat.`
+          );
+
+          // ====================================================
+          // HAPUS QUERY HISTORY DARI URL
+          // ====================================================
+
+          window.history.replaceState(
+            {},
+            "",
+            window.location.pathname
+          );
+        } catch (err) {
+          console.error(
+            "History error:",
+            err
+          );
+
+          addNotification(
+            "Gagal memuat riwayat."
+          );
+        } finally {
+          setIsGenerating(
+            false
+          );
+        }
+      };
+
+    loadHistory();
   }, [historyId]);
+
+  // ============================================================
+  // RETURN
+  // ============================================================
 
   return {
     selectedAngle,
     setSelectedAngle,
 
-    keyword,
-    setKeyword,
+    topic,
+    setTopic,
 
     comments,
     setComments,
-
-    periode,
-    setPeriode,
 
     isAnalyzing,
     isGenerating,
@@ -436,7 +796,6 @@ export function useContentGenerator() {
     analysisResult,
     generatedResult,
 
-    history,
     copiedId,
     notifications,
 
@@ -449,4 +808,4 @@ export function useContentGenerator() {
     resetGenerator,
     addNotification,
   };
-} 
+}

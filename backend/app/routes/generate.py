@@ -17,7 +17,7 @@ def generate():
     data = request.get_json(silent=True) or {}
 
     # ============================================================
-    # 1. Ambil input
+    # 1. AMBIL INPUT
     # ============================================================
 
     topic = (data.get("topic") or "").strip()
@@ -38,9 +38,9 @@ def generate():
         }), 400
 
     # ============================================================
-    # 2. Analisis satu komentar menggunakan IndoBERTweet
+    # 2. ANALISIS SATU KOMENTAR MENGGUNAKAN INDOBERTWEET
     #
-    # Hasil:
+    # Output:
     # - sentiment
     # - confidence
     # - probabilities
@@ -50,6 +50,22 @@ def generate():
     try:
         analysis = analyze_comment(comment)
 
+        # ========================================================
+        # DEBUG 1 — HASIL LANGSUNG DARI INDOBERTWEET
+        # ========================================================
+
+        print("\n")
+        print("=" * 60)
+        print("[DEBUG 1] HASIL ANALISIS INDOBERTWEET")
+        print("=" * 60)
+        print("Comment       :", comment)
+        print("Sentiment     :", analysis.get("sentiment"))
+        print("Confidence    :", analysis.get("confidence"))
+        print("Probabilities :", analysis.get("probabilities"))
+        print("Method        :", analysis.get("method"))
+        print("Full Analysis :", analysis)
+        print("=" * 60)
+
     except Exception as e:
         traceback.print_exc()
 
@@ -57,6 +73,10 @@ def generate():
             "error": "analysis_failed",
             "message": str(e)
         }), 500
+
+    # ============================================================
+    # VALIDASI SENTIMENT
+    # ============================================================
 
     sentiment = analysis.get("sentiment")
 
@@ -67,12 +87,10 @@ def generate():
         }), 500
 
     # ============================================================
-    # 3. Tentukan strategi berdasarkan hasil sentimen
-    #
-    # IndoBERTweet → sentiment
-    # sentiment → strategy rule
+    # 3. TENTUKAN STRATEGI
     #
     # Confidence TIDAK digunakan untuk menentukan strategi.
+    # Strategi ditentukan berdasarkan sentiment + pilihan user.
     # ============================================================
 
     try:
@@ -90,7 +108,7 @@ def generate():
         }), 500
 
     # ============================================================
-    # 4. Generate ide dengan LLM
+    # 4. GENERATE IDE DENGAN LLM
     #
     # LLM menerima:
     # - topic
@@ -118,57 +136,120 @@ def generate():
         }), 500
 
     # ============================================================
-    # 5. Tambahkan category ke setiap ide
+    # 5. TAMBAHKAN CATEGORY KE SETIAP IDE
     # ============================================================
 
     for idea in ideas:
         idea["category"] = strategy["label"]
 
     # ============================================================
-    # 6. Bentuk response
+    # 6. BENTUK RESULT
     # ============================================================
 
     result = {
+        # ========================================================
+        # INPUT
+        # ========================================================
+
         "topic": topic,
+        "keyword": topic,
         "comment": comment,
 
-        # Hasil klasifikasi IndoBERTweet
+        # ========================================================
+        # HASIL INDOBERTWEET
+        # ========================================================
+
         "sentiment": sentiment,
-        "confidence": analysis.get("confidence"),
+
+        "confidence": analysis.get(
+            "confidence"
+        ),
+
         "probabilities": analysis.get(
             "probabilities",
             {}
         ),
+
         "method": analysis.get(
             "method",
-            "IndoBERT"
+            "IndoBERTweet"
         ),
 
-        # Hasil strategy rule
+
+        # ========================================================
+        # DOMINANT PHRASE
+        # ========================================================
+
+        "dominant_phrase": analysis.get(
+            "dominant_phrase"
+        ),
+
+        # ========================================================
+        # STRATEGY
+        # ========================================================
+
         "angle": strategy["label"],
         "strategy": strategy,
 
-        # Metadata
+        # ========================================================
+        # METADATA
+        # ========================================================
+
         "periode": periode,
+
         "timestamp": datetime.now().isoformat(
             timespec="seconds"
         ),
 
-        # Hasil LLM
+        # ========================================================
+        # GENERATED IDEAS
+        # ========================================================
+
         "ideas": ideas,
     }
 
     # ============================================================
-    # 7. Simpan history
+    # DEBUG 2 — HASIL SEBELUM MASUK save_history()
+    # ============================================================
+
+    print("\n")
+    print("=" * 60)
+    print("[DEBUG 2] RESULT SEBELUM SAVE HISTORY")
+    print("=" * 60)
+    print("Sentiment     :", result.get("sentiment"))
+    print("Confidence    :", result.get("confidence"))
+    print("Probabilities :", result.get("probabilities"))
+    print("=" * 60)
+
+    # ============================================================
+    # 7. SIMPAN HISTORY
     # ============================================================
 
     try:
-        save_history(
+        history_id = save_history(
             result,
             strategy_key=strategy["key"]
         )
 
+        # ========================================================
+        # DEBUG 3 — HASIL SETELAH save_history()
+        # ========================================================
+
+        print("\n")
+        print("=" * 60)
+        print("[DEBUG 3] HISTORY BERHASIL DISIMPAN")
+        print("=" * 60)
+        print("History ID    :", history_id)
+        print("Sentiment     :", result.get("sentiment"))
+        print("Confidence    :", result.get("confidence"))
+        print("Probabilities :", result.get("probabilities"))
+        print("=" * 60)
+
     except Exception:
         traceback.print_exc()
+
+    # ============================================================
+    # 8. RETURN RESPONSE
+    # ============================================================
 
     return jsonify(result)

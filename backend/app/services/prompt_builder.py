@@ -1,4 +1,3 @@
-
 _STRATEGY_TONE = {
     "address_pain_point": {
         "arahan": (
@@ -11,8 +10,32 @@ _STRATEGY_TONE = {
             "DILARANG mengabaikan keluhan pada komentar. "
             "DILARANG menyalahkan pasien."
         ),
+        "sudut_opsi": {
+            "OPSI 1": (
+                "Solusi atau langkah konkret yang bisa langsung diambil/ditanyakan "
+                "audiens terkait keluhan (misal: cara mengecek, opsi yang tersedia, "
+                "apa yang perlu disiapkan)."
+            ),
+            "OPSI 2": (
+                "Transparansi proses: jelaskan faktor/alasan di balik hal yang "
+                "dikeluhkan dengan bahasa yang jujur, TANPA mengklaim institusi "
+                "sudah mengubah atau memperbaiki sesuatu."
+            ),
+            "OPSI 3": (
+                "Reframing preventif: bantu audiens mengantisipasi atau "
+                "mempersiapkan diri agar masalah serupa lebih mudah dihadapi "
+                "ke depannya."
+            ),
+        },
+        "frasa_terlarang": [
+            "kami memahami",
+            "kami mengerti kekhawatiran anda",
+            "kami turut prihatin",
+            "terima kasih atas masukannya",
+            "kami akan terus meningkatkan pelayanan",
+            "kepuasan anda adalah prioritas kami",
+        ],
     },
-
     "edukasi_informatif": {
         "arahan": (
             "Fokus pada edukasi berdasarkan konteks komentar. "
@@ -23,8 +46,13 @@ _STRATEGY_TONE = {
             "DILARANG menggunakan gaya clickbait atau bombastis. "
             "DILARANG membuat konten yang terkesan menjual atau promosi."
         ),
+        "sudut_opsi": {
+            "OPSI 1": "Penjelasan faktual langsung: apa dan kenapa, terkait isi komentar.",
+            "OPSI 2": "Format mitos vs fakta yang menjawab langsung asumsi/keresahan dalam komentar.",
+            "OPSI 3": "Tips atau langkah praktis yang bisa diambil audiens terkait topik.",
+        },
+        "frasa_terlarang": [],
     },
-
     "showcase_positif": {
         "arahan": (
             "Fokus mengangkat pengalaman positif yang tercermin dalam komentar. "
@@ -35,6 +63,12 @@ _STRATEGY_TONE = {
             "DILARANG membuat klaim berlebihan atau tidak realistis. "
             "DILARANG menggunakan superlatif kosong."
         ),
+        "sudut_opsi": {
+            "OPSI 1": "Angkat pengalaman spesifik dalam komentar sebagai cerita singkat (mini-story).",
+            "OPSI 2": "Highlight aspek/nilai layanan yang disebut komentar dari sudut manfaat konkret bagi audiens.",
+            "OPSI 3": "Ajak audiens lain berbagi pengalaman serupa (community engagement) berbasis apa yang disebut komentar.",
+        },
+        "frasa_terlarang": [],
     },
 }
 
@@ -59,6 +93,20 @@ def build_prompt(
     )
 
     formats_list = ", ".join(_FORMATS)
+
+    sudut_opsi_text = "\n".join(
+        f'- {opsi}: {deskripsi}'
+        for opsi, deskripsi in cfg["sudut_opsi"].items()
+    )
+
+    if cfg["frasa_terlarang"]:
+        frasa_terlarang_text = "\n".join(f'- "{f}"' for f in cfg["frasa_terlarang"])
+        frasa_terlarang_block = f"""
+Frasa klise yang DILARANG dipakai (termasuk variasinya):
+{frasa_terlarang_text}
+"""
+    else:
+        frasa_terlarang_block = ""
 
     return f"""
 Kamu adalah content strategist untuk institusi kesehatan.
@@ -102,10 +150,26 @@ Arahan:
 
 Larangan:
 {cfg["larangan"]}
+{frasa_terlarang_block}
+=== LANGKAH SEBELUM MENULIS ===
+
+Sebelum menyusun 3 ide, temukan SATU detail paling konkret dalam
+komentar (bisa berupa angka, waktu, tempat, tindakan, kata kunci
+emosional, atau situasi spesifik yang disebutkan). Detail ini WAJIB
+jadi benang merah yang membedakan cara tiap ide mengangkat komentar
+yang sama — bukan pengulangan kalimat yang sama dengan kata berbeda.
+
+=== SUDUT PANDANG WAJIB PER OPSI ===
+
+Setiap OPSI harus mengambil sudut pandang berbeda berikut, supaya
+ketiganya benar-benar berbeda secara konsep (bukan cuma beda diksi):
+
+{sudut_opsi_text}
 
 === ATURAN WAJIB ===
 
-1. SETIAP ide wajib merespons isi komentar secara spesifik.
+1. SETIAP ide wajib merespons isi komentar secara spesifik, termasuk
+   detail konkret yang ditemukan di "LANGKAH SEBELUM MENULIS".
 
 2. Jika komentar berisi keluhan atau pengalaman tertentu, gunakan
    detail keluhan tersebut sebagai dasar ide.
@@ -115,10 +179,10 @@ Larangan:
 4. Jangan membuat ide generik yang dapat digunakan untuk semua klinik,
    rumah sakit, atau institusi kesehatan.
 
-5. Gunakan detail konkret dari komentar jika relevan.
-   Contohnya, jika komentar menyebut "menunggu hampir 2 jam",
-   maka detail waktu tunggu tersebut boleh digunakan dalam hook,
-   body, atau justification.
+5. Gunakan detail konkret dari komentar. Contohnya, jika komentar
+   menyebut "menunggu hampir 2 jam", maka detail waktu tunggu tersebut
+   WAJIB digunakan dalam hook, body, atau justification — bukan
+   opsional.
 
 6. Jangan mengarang fakta operasional yang tidak diberikan.
    Jangan mengatakan bahwa klinik telah menambah tenaga medis,
@@ -126,14 +190,15 @@ Larangan:
    atau melakukan tindakan tertentu kecuali hal tersebut memang
    disebutkan dalam komentar atau diberikan oleh sistem.
 
-7. Jika memberikan solusi, gunakan bentuk saran atau rekomendasi
-   yang realistis, bukan klaim bahwa institusi sudah melakukan
-   tindakan tertentu.
+7. Jika memberikan solusi, gunakan bentuk saran, informasi, atau
+   langkah yang bisa diambil AUDIENS sendiri — bukan klaim bahwa
+   institusi sudah melakukan tindakan tertentu.
 
 8. Konsisten dengan strategi "{strategy["label"]}".
 
-9. Setiap ide harus memiliki pendekatan yang berbeda, tetapi tetap
-   berasal dari komentar yang sama.
+9. Setiap ide WAJIB mengikuti sudut pandang berbeda sesuai
+   "SUDUT PANDANG WAJIB PER OPSI" di atas — dilarang membuat 3 ide
+   yang secara substansi sama hanya dengan kalimat pembuka berbeda.
 
 10. Buat TEPAT 3 ide dengan format berbeda:
     {formats_list}
@@ -146,10 +211,10 @@ Larangan:
     - justification maksimal 30 kata
 
 12. Bagian "justification" WAJIB menjelaskan:
-    - masalah atau konteks dari komentar,
+    - detail konkret dari komentar yang dipakai sebagai dasar ide,
     - sentimen yang diberikan sistem,
     - hubungan dengan topik,
-    - dan alasan strategi tersebut sesuai.
+    - dan alasan sudut pandang OPSI tersebut sesuai dengan strategi.
 
 13. Jangan menyebut confidence score atau probabilitas dalam
     justification.
@@ -159,28 +224,36 @@ Larangan:
 
 15. Hashtag maksimal 5 dan harus relevan dengan topik serta isi komentar.
 
+16. Dilarang membuka hook dengan basa-basi kosong (contoh: "Halo
+    #TopikSehat!", "Tahukah kamu?") kecuali basa-basi itu langsung
+    menyambung ke detail konkret dari komentar dalam kalimat yang sama.
+
 === GAYA KONTEN ===
 
 Buat ide yang terasa seperti konten media sosial yang benar-benar
-bisa digunakan oleh institusi kesehatan.
+bisa digunakan oleh institusi kesehatan — spesifik ke situasi dalam
+komentar, bukan template yang bisa dipakai untuk topik apa saja.
 
 Untuk strategi Address Pain Point:
-- mulai dengan empati terhadap keluhan;
-- angkat masalah secara jelas;
-- berikan edukasi, saran, atau langkah konkret;
+- mulai dengan pengakuan singkat terhadap keluhan TANPA memakai
+  frasa klise yang dilarang di atas;
+- angkat detail konkret dari keluhan secara eksplisit;
+- berikan nilai nyata sesuai sudut OPSI-nya (solusi/transparansi/
+  pencegahan), bukan sekadar "kami dengarkan";
 - jangan menyalahkan pasien;
 - jangan membuat janji atau klaim bahwa institusi sudah melakukan
   sesuatu jika tidak ada informasinya.
 
 Untuk strategi Edukasi Informatif:
 - gunakan komentar sebagai konteks masalah;
-- ubah masalah menjadi edukasi yang mudah dipahami;
+- ubah masalah menjadi edukasi yang mudah dipahami sesuai sudut
+  OPSI-nya;
 - tetap netral dan informatif;
 - jangan membuat klaim promosi.
 
 Untuk strategi Showcase Positif:
 - gunakan pengalaman positif yang benar-benar terdapat dalam komentar;
-- tonjolkan aspek positif yang relevan;
+- tonjolkan aspek positif yang relevan sesuai sudut OPSI-nya;
 - jangan menambahkan pengalaman positif yang tidak disebutkan;
 - hindari klaim berlebihan.
 
@@ -206,7 +279,7 @@ Tanpa ```.
                 "dengan",
                 "topik"
             ],
-            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+            "justification": "alasan berbasis detail konkret komentar, sentimen, topik, dan strategi"
         }},
         {{
             "title": "judul berbeda dari ide pertama",
@@ -220,7 +293,7 @@ Tanpa ```.
                 "dengan",
                 "topik"
             ],
-            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+            "justification": "alasan berbasis detail konkret komentar, sentimen, topik, dan strategi"
         }},
         {{
             "title": "judul berbeda dari ide sebelumnya",
@@ -234,7 +307,7 @@ Tanpa ```.
                 "dengan",
                 "topik"
             ],
-            "justification": "alasan berbasis komentar, sentimen, topik, dan strategi"
+            "justification": "alasan berbasis detail konkret komentar, sentimen, topik, dan strategi"
         }}
     ]
 }}

@@ -1,8 +1,8 @@
 import { TOPIC_SUGGESTIONS } from "@/lib/mockData";
 
 interface SearchFormProps {
-  keyword: string;
-  setKeyword: (value: string) => void;
+  topic: string;
+  setTopic: (value: string) => void;
 
   comments: string;
   setComments: (value: string) => void;
@@ -13,8 +13,8 @@ interface SearchFormProps {
 }
 
 export default function SearchForm({
-  keyword,
-  setKeyword,
+  topic,
+  setTopic,
   comments,
   setComments,
   isAnalyzing,
@@ -22,29 +22,41 @@ export default function SearchForm({
   onSelectTopic,
 }: SearchFormProps) {
   return (
-    <section id="generator-section">
-      <form onSubmit={onAnalyze} className="space-y-4">
-        <div>
-          <h2 className="text-lg font-bold text-zinc-900">
-            Analisis Tren Topik Kesehatan
-          </h2>
-        </div>
+    <section
+      id="generator-section"
+      className="space-y-8"
+    >
+      <div className="space-y-2">
+        <span className="text-[11px] font-bold tracking-widest text-teal-600 uppercase block">
+          — Analisis
+        </span>
 
-        {/* Keyword */}
+        <h2 className="font-serif text-2xl md:text-[2rem] tracking-tight text-zinc-900 font-extrabold">
+          Analisis Tren Topik Kesehatan
+        </h2>
+
+        <p className="mt-1 text-xs text-zinc-400">
+          Analisis satu komentar menggunakan IndoBERTweet
+          untuk menentukan sentimen dan strategi konten.
+        </p>
+      </div>
+
+      <form onSubmit={onAnalyze} className="space-y-5">
+        {/* Topic */}
         <div>
           <label
-            htmlFor="keyword-input"
+            htmlFor="topic-input"
             className="block text-xs font-bold text-zinc-700 mb-2"
           >
-            Keyword
+            Topic
           </label>
 
           <input
-            id="keyword-input"
+            id="topic-input"
             type="text"
             required
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
             placeholder="Contoh: antrian BPJS, biaya scaling"
             className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 bg-zinc-50/50 text-sm font-medium transition"
           />
@@ -65,19 +77,16 @@ export default function SearchForm({
             value={comments}
             onChange={(e) => setComments(e.target.value)}
             rows={6}
-            placeholder={`Masukkan komentar yang ingin dianalisis.
-Satu komentar per baris.
+            placeholder={`Masukkan satu komentar yang ingin dianalisis.
 
 Contoh:
-Antrian di klinik ini lama sekali.
-Pelayanannya sangat ramah dan cepat.
-Saya bingung dengan prosedur BPJS.`}
+Pelayanan di klinik ini lama sekali, saya sudah menunggu hampir 2 jam.`}
             className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 bg-zinc-50/50 text-sm font-medium transition resize-none"
           />
 
           <p className="mt-1.5 text-[11px] text-zinc-400">
-            Satu baris dianggap sebagai satu komentar dan akan
-            dianalisis oleh IndoBERTweet.
+            Satu komentar akan dianalisis menggunakan
+            IndoBERTweet.
           </p>
         </div>
 
@@ -87,7 +96,7 @@ Saya bingung dengan prosedur BPJS.`}
             type="submit"
             disabled={
               isAnalyzing ||
-              !keyword.trim() ||
+              !topic.trim() ||
               !comments.trim()
             }
             className="px-6 py-3 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-teal-600 hover:bg-teal-700 text-white shrink-0"
@@ -103,23 +112,23 @@ Saya bingung dengan prosedur BPJS.`}
           </button>
         </div>
 
-        {/* Contoh keyword */}
+        {/* Contoh topic */}
         <div className="flex flex-wrap items-center gap-2 justify-center pt-1">
           <span className="text-[11px] text-zinc-400 font-semibold">
             Contoh:
           </span>
 
-          {TOPIC_SUGGESTIONS.map((topic) => {
+          {TOPIC_SUGGESTIONS.map((suggestion) => {
             const active =
-              keyword.toLowerCase() ===
-              topic.text.toLowerCase();
+              topic.toLowerCase() ===
+              suggestion.text.toLowerCase();
 
             return (
               <button
                 type="button"
-                key={topic.text}
+                key={suggestion.text}
                 onClick={() =>
-                  onSelectTopic(topic.text)
+                  onSelectTopic(suggestion.text)
                 }
                 className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
                   active
@@ -127,7 +136,7 @@ Saya bingung dengan prosedur BPJS.`}
                     : "text-teal-700 hover:bg-teal-50"
                 }`}
               >
-                {topic.text}
+                {suggestion.text}
               </button>
             );
           })}

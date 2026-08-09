@@ -23,35 +23,59 @@ interface IdeasSectionProps {
   onReset: () => void;
 }
 
-export default function IdeasSection({ result, copiedId, onCopy, onSave, onReset }: IdeasSectionProps) {
+export default function IdeasSection({
+  result,
+  copiedId,
+  onCopy,
+  onSave,
+  onReset,
+}: IdeasSectionProps) {
   return (
-    <section id="ideas-section" className="space-y-6 border-t border-zinc-200/80 pt-16 scroll-mt-20">
-      <div className="space-y-2">
-        <span className="text-[11px] font-bold tracking-widest text-teal-600 uppercase block">
+    <section className="space-y-6">
+      {/* Header */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-teal-600 mb-2">
           — Ide Konten Rekomendasi AI
-        </span>
-        <h2 className="font-serif text-2xl md:text-[2rem] tracking-tight text-zinc-900 font-extrabold">
-          {result.ideas.length} ide konten untuk{" "}
-          <span className="text-teal-600 font-serif italic font-bold leading-none">{result.keyword}</span>
+        </p>
+
+       <h2 className="font-serif text-2xl md:text-[2rem] tracking-tight text-zinc-900 font-extrabold">
+          3 ide konten untuk{" "}
+          <span className="text-teal-600 font-serif italic">
+            {result.topic}
+          </span>
         </h2>
-        <p className="text-sm leading-relaxed text-zinc-500 max-w-lg font-medium">
+
+        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
           Disusun berdasarkan strategi{" "}
-          <span className="font-bold text-zinc-700">{result.angle}</span> dan analisis tren sentimen publik tentang{" "}
-          {result.keyword}.
+          <span className="font-semibold text-zinc-700">
+            {result.angle}
+          </span>{" "}
+          dan analisis tren sentimen publik tentang{" "}
+          <span className="font-semibold text-zinc-700">
+            {result.topic}
+          </span>
+          .
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Content Ideas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {result.ideas.map((idea) => (
           <div
             key={idea.id}
             className="p-5 flex flex-col justify-between border border-zinc-200 rounded-2xl bg-white hover:shadow-lg transition-all"
           >
             <div className="space-y-4">
+              {/* Badge */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className={`inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold ${formatBadgeStyle(idea.format)}`}>
+                <span
+                  className={`inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold ${formatBadgeStyle(
+                    idea.format
+                  )}`}
+                >
                   {idea.format}
                 </span>
+
                 {idea.category && (
                   <span className="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-bold bg-zinc-100 border border-zinc-200 text-zinc-600">
                     {idea.category}
@@ -59,42 +83,75 @@ export default function IdeasSection({ result, copiedId, onCopy, onSave, onReset
                 )}
               </div>
 
-              <h4 className="text-xs font-bold text-zinc-900 leading-snug">{idea.title}</h4>
+              {/* Title */}
+              <h4 className="text-xs font-bold text-zinc-900 leading-snug">
+                {idea.title}
+              </h4>
 
+              {/* Content */}
               <div className="space-y-3 bg-zinc-50/50 p-4 rounded-xl border border-zinc-100 text-xs">
                 <div>
-                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">1. Hook</span>
-                  <p className="text-zinc-700 italic mt-0.5 font-medium">&ldquo;{idea.hook}&rdquo;</p>
+                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">
+                    1. Hook
+                  </span>
+
+                  <p className="text-zinc-700 italic mt-0.5 font-medium">
+                    &ldquo;{idea.hook}&rdquo;
+                  </p>
                 </div>
+
                 <div>
-                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">2. Isi Postingan</span>
-                  <p className="text-zinc-600 mt-0.5 leading-relaxed font-medium">{idea.body}</p>
+                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">
+                    2. Isi Postingan
+                  </span>
+
+                  <p className="text-zinc-600 mt-0.5 leading-relaxed font-medium">
+                    {idea.body}
+                  </p>
                 </div>
+
                 <div>
-                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">3. Call to Action (CTA)</span>
-                  <p className="text-zinc-800 font-bold mt-0.5">{idea.cta}</p>
+                  <span className="block text-[9px] font-bold text-zinc-400 uppercase tracking-wide">
+                    3. Call to Action (CTA)
+                  </span>
+
+                  <p className="text-zinc-800 font-bold mt-0.5">
+                    {idea.cta}
+                  </p>
                 </div>
               </div>
 
+              {/* Hashtags */}
               <div className="flex flex-wrap gap-1">
                 {idea.hashtags.map((tag) => (
-                  <span key={tag} className="text-[10px] text-teal-600 font-bold">#{tag}</span>
+                  <span
+                    key={tag}
+                    className="text-[10px] text-teal-600 font-bold"
+                  >
+                    #{tag}
+                  </span>
                 ))}
               </div>
 
+              {/* Justification */}
               <div className="p-3 bg-zinc-50 border border-zinc-200/50 rounded-xl text-[10px] text-zinc-500 leading-relaxed font-medium flex gap-1.5 items-start">
                 <span>💡</span>
+
                 <div>
-                  <span className="font-bold text-zinc-800">Justifikasi:</span> {idea.justification}
+                  <span className="font-bold text-zinc-800">
+                    Justifikasi:
+                  </span>{" "}
+                  {idea.justification}
                 </div>
               </div>
             </div>
 
+            {/* Actions */}
             <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4 mt-6">
               <button
                 onClick={() =>
                   onCopy(
-                    idea.id,
+                    String(idea.id),
                     `Judul: ${idea.title}\n\nHook: ${idea.hook}\nIsi: ${idea.body}\nCTA: ${idea.cta}\n\nHashtags: ${idea.hashtags
                       .map((t) => `#${t}`)
                       .join(" ")}\nJustifikasi: ${idea.justification}`
@@ -106,8 +163,11 @@ export default function IdeasSection({ result, copiedId, onCopy, onSave, onReset
                     : "bg-white border-zinc-200 hover:border-zinc-300 text-zinc-700 hover:bg-zinc-50/50 cursor-pointer"
                 }`}
               >
-                <span>{copiedId === idea.id ? "Disalin!" : "Copy"}</span>
+                <span>
+                  {copiedId === idea.id ? "Disalin!" : "Copy"}
+                </span>
               </button>
+
               <button
                 onClick={() => onSave(idea.title)}
                 className="text-[10px] px-3.5 py-1.5 border rounded-xl font-bold bg-zinc-900 border-zinc-900 text-white hover:bg-zinc-800 transition cursor-pointer"
@@ -119,7 +179,8 @@ export default function IdeasSection({ result, copiedId, onCopy, onSave, onReset
         ))}
       </div>
 
-      <div className="flex justify-center pt-4">
+      {/* Generate Again */}
+      <div className="flex justify-center pt-2">
         <button
           onClick={onReset}
           className="text-xs font-bold text-zinc-400 hover:text-zinc-500 transition cursor-pointer"

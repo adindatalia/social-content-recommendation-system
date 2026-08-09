@@ -33,6 +33,16 @@ def analyze():
 
     # ============================================================
     # 2. Analisis satu komentar dengan IndoBERTweet
+    #
+    # Input:
+    #   1 topik
+    #   1 komentar/opini
+    #
+    # Output:
+    #   sentiment
+    #   confidence
+    #   probabilities
+    #   method
     # ============================================================
 
     try:
@@ -53,7 +63,10 @@ def analyze():
         }), 500
 
     # ============================================================
-    # 3. Tentukan strategi berdasarkan sentimen
+    # 3. Tentukan strategi
+    #
+    # Strategi ditentukan berdasarkan sentiment.
+    # User tetap dapat memilih angle secara manual.
     # ============================================================
 
     try:
@@ -76,13 +89,16 @@ def analyze():
         "topic": topic,
         "comment": comment,
 
-        "sentiment": analysis["sentiment"],
-        "confidence": analysis["confidence"],
-        "probabilities": analysis["probabilities"],
-        "method": analysis["method"],
+        # Hasil IndoBERTweet
+        "sentiment": analysis.get("sentiment"),
+        "confidence": analysis.get("confidence"),
+        "probabilities": analysis.get("probabilities", {}),
+        "method": analysis.get("method", "IndoBERTweet"),
 
+        # Hasil rekomendasi strategi
         "strategy": strategy,
         "recommended_strategy": strategy,
 
+        # Mode analisis
         "mode": "single"
     })

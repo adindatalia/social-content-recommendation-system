@@ -1,14 +1,15 @@
 
 export type ContentFormat =
-  | "Opsi 1"
-  | "Opsi 2"
-  | "Opsi 3";
+  | "OPSI 1"
+  | "OPSI 2"
+  | "OPSI 3";
 
-
-// Generate
+// ============================================================
+// GENERATED IDEA
+// ============================================================
 
 export interface GeneratedIdea {
-  id: string;
+  id: string | number;
   title: string;
   format: ContentFormat | string;
   category: string;
@@ -17,103 +18,150 @@ export interface GeneratedIdea {
   cta: string;
   hashtags: string[];
   justification: string;
+  is_saved?: boolean;
 }
 
-// Analyze
-export interface PhraseItem {
-  keyword: string;
-  count: number;
+// ============================================================
+// SENTIMENT
+// ============================================================
+
+export type Sentiment =
+  | "Negatif"
+  | "Netral"
+  | "Positif";
+
+// ============================================================
+// PROBABILITIES
+// ============================================================
+
+export interface SentimentProbabilities {
+  Negatif: number;
+  Netral: number;
+  Positif: number;
 }
 
-export interface DominantPhrases {
-  negative: PhraseItem[];
-  neutral: PhraseItem[];
-  positive: PhraseItem[];
-}
+// ============================================================
+// STRATEGY
+// ============================================================
 
 export interface RecommendedStrategy {
   key: string;
   label: string;
-  // Field tambahan yang sebenarnya sudah dikirim backend (strategy_service.resolve_strategy)
-  // tapi sebelumnya tidak dimanfaatkan frontend. Dibuat opsional supaya tetap
-  // backward-compatible dengan data lama (mis. history mock) yang belum punya field ini.
-  target_sentiment?: "Negatif" | "Netral" | "Positif";
+
+  target_sentiment?: Sentiment;
+
   description?: string;
+
   reasoning?: string[];
+
   is_recommended?: boolean;
+
   recommended_key?: string;
+
   recommended_label?: string;
 }
 
+// ============================================================
+// DOMINANT PHRASE
+// ============================================================
+//
+// Backend sekarang mengirim:
+//
+// "dominant_phrase": ...
+//
+// Jadi gunakan singular, bukan dominant_phrases.
+//
 
-export interface PainPointItem {
-  text: string;
-  count: string;
-  pct: number;
-}
+export type DominantPhrase =
+  | string
+  | null;
 
-export interface InsightsData {
-  total_comments: number;
-  distribution: {
-    Positif: number;
-    Netral: number;
-    Negatif: number;
-  };
-  pain_points: PainPointItem[];
-}
+// ============================================================
+// ANALYSIS RESULT
+// ============================================================
 
 export interface AnalysisResult {
   keyword: string;
 
-  distribution: {
-    Positif: number;
-    Netral: number;
-    Negatif: number;
-  };
-
-  dominant_phrases: DominantPhrases;
-
-  recommended_strategy: RecommendedStrategy;
+  mode?: "single" | "batch";
 
   total_comments: number;
+
+  sentiment?: Sentiment;
+
+  confidence?: number | null;
+
+  probabilities?: SentimentProbabilities | null;
+
+  method?: string;
+
+  dominant_phrase?: DominantPhrase;
+
+  recommended_strategy?: RecommendedStrategy;
 }
 
-// Final Result (Generate + Analyze)
+// ============================================================
+// GENERATION RESULT
+// ============================================================
+
 export interface GenerationResult {
-  keyword: string;
+  topic: string;
+
+  comment: string;
+
+  sentiment: Sentiment;
+
+  confidence?: number | null;
+
   angle: string;
-  periode: string;
+
   timestamp: string;
 
   ideas: GeneratedIdea[];
 
-// Snapshot analisis dari tahap /api/analyze (Step 1, sebelum strategi dipilih)
-analysis: AnalysisResult;
+  strategy: RecommendedStrategy;
 
-// Field asli yang dikembalikan langsung oleh /api/generate
-strategy?: RecommendedStrategy;
-dominant_phrases?: DominantPhrases;
-distribution?: {
-  Positif: number;
-  Netral: number;
-  Negatif: number;
-};
+  probabilities?: SentimentProbabilities | null;
 
+  method?: string;
+
+  dominant_phrase?: DominantPhrase;
+
+  analysis?: AnalysisResult;
 }
 
-// History
+// ============================================================
+// HISTORY
+// ============================================================
+
 export interface HistoryItem {
-  id: string;
-  keyword: string;
+  id: string | number;
+
+  topic: string;
+
+  comment: string;
+
   angle: string;
-  periode: string;
+
+  sentiment: Sentiment;
+
+  confidence?: number | null;
+
   timestamp: string;
+
+  probabilities?: SentimentProbabilities | null;
+
+  dominant_phrase?: DominantPhrase;
 
   result: GenerationResult;
 }
 
-// Toast
+// ============================================================
+// TOAST / NOTIFICATION
+// ============================================================
+
 export interface Notification {
   id: string;
+
   text: string;
 }
