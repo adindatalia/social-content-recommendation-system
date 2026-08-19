@@ -5,7 +5,6 @@ import { useGenerator } from "@/context/ContentGeneratorContext";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import SearchForm from "@/components/SearchForm";
-import InsightSection from "@/components/InsightSection";
 import Loading from "@/components/Loading";
 import StrategySection from "@/components/StrategySection";
 import IdeasSection from "@/components/IdeasSection";
@@ -39,12 +38,6 @@ export default function Home() {
         {gen.isAnalyzing && (
           <Loading loadingStep={0} />
         )}
-
-        {/* 5. Insight default */}
-        {!gen.analysisResult &&
-          !gen.isAnalyzing && (
-            <InsightSection />
-          )}
 
         {/* 6. Hasil analisis + strategi */}
         {gen.analysisResult &&
