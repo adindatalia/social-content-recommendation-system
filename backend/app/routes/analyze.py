@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 
+from app.services.domain_validation_service import validate_health_domain
 from app.services.insight_service import analyze_comment
 from app.services.strategy_service import resolve_strategy
 
@@ -12,7 +13,6 @@ def analyze():
     data = request.get_json(silent=True) or {}
 
     # Ambil input
-
     topic = (data.get("topic") or "").strip()
     comment = (data.get("comment") or "").strip()
     chosen_angle = data.get("angle")
@@ -29,8 +29,20 @@ def analyze():
             "message": "Komentar wajib diisi"
         }), 400
 
-    # Analisis satu komentar dengan IndoBERTweet
+    # Validasi domain layanan kesehatan
+    try:
+        validate_health_domain(
+            topic=topic,
+            comment=comment
+        )
 
+    except ValueError as e:
+        return jsonify({
+            "error": "out_of_domain",
+            "message": str(e)
+        }), 400
+
+    # Analisis satu komentar dengan IndoBERTweet
     try:
         analysis = analyze_comment(comment)
 
@@ -48,10 +60,8 @@ def analyze():
             "message": "Hasil sentimen tidak ditemukan"
         }), 500
 
-    # Tentukan strategi
-    # Strategi ditentukan berdasarkan sentiment.
-    # User tetap dapat memilih angle secara manual.
-
+    # Tentukan strategi berdasarkan sentimen.
+    # Pengguna tetap dapat memilih strategi lain secara manual.
     try:
         strategy = resolve_strategy(
             sentiment=sentiment,
@@ -64,7 +74,6 @@ def analyze():
             "message": str(e)
         }), 500
 
-    # Response
     return jsonify({
         "topic": topic,
         "comment": comment,

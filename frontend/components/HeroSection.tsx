@@ -10,7 +10,7 @@ export default function HeroSection() {
           color: "#0f766e",
         }}
       >
-        Sentiment-Driven Content Generator
+        Sentiment-Based Content Generator
       </div>
 
       <h1 className="font-serif text-[clamp(2.2rem,5.5vw,3.8rem)] leading-[1.12] tracking-tight text-zinc-900 font-extrabold">
@@ -22,10 +22,10 @@ export default function HeroSection() {
         kebutuhan publik
       </h1>
 
-      <p className="text-[15px] leading-relaxed max-w-lg mx-auto text-zinc-500 font-medium">
-        Pilih strategi konten berdasarkan sentimen publik.
-        Sistem akan menghasilkan ide konten spesifik untuk setiap
-        strategi—pain point, edukasi, maupun positive showcase.
+      <p className="text-[15px] leading-relaxed max-w-xl mx-auto text-zinc-500 font-medium">
+        Analisis satu komentar menggunakan IndoBERTweet,
+        dapatkan rekomendasi strategi berdasarkan sentimen,
+        lalu hasilkan tiga alternatif ide konten dengan Gemini.
       </p>
 
     </section>

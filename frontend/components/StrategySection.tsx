@@ -28,9 +28,6 @@ function normalizeProbability(value: number | undefined) {
     return 0;
   }
 
-  // Backend normalnya mengirim 0–1.
-  // Jika suatu saat backend mengirim 0–100,
-  // tetap aman ditampilkan.
   return value > 1 ? value / 100 : value;
 }
 
@@ -74,23 +71,19 @@ export default function StrategySection({
   return (
     <section
       id="strategy-section"
-      className="space-y-10 border-t border-zinc-200/80 pt-16 scroll-mt-20"
+      className="space-y-8 border-t border-zinc-200/80 pt-16 scroll-mt-20"
     >
-      {/* ===================================================== */}
-      {/* HASIL ANALISIS */}
-      {/* ===================================================== */}
-
+      {/* Hasil Analisis */}
       <div className="space-y-2">
         <span className="text-[11px] font-bold tracking-widest text-teal-600 uppercase block">
           — Hasil Analisis
         </span>
 
         <h2 className="font-serif text-2xl md:text-[2rem] tracking-tight text-zinc-900 font-extrabold">
-          Bagaimana sentimen terhadap{" "}
+          Sentimen komentar tentang{" "}
           <span className="text-teal-600 font-serif italic">
             {analysis.keyword ?? ""}
           </span>
-          ?
         </h2>
 
         <p className="text-sm leading-relaxed text-zinc-500 max-w-lg font-medium">
@@ -99,12 +92,8 @@ export default function StrategySection({
         </p>
       </div>
 
-      {/* ===================================================== */}
-      {/* SENTIMENT + PROBABILITY */}
-      {/* ===================================================== */}
-
+      {/* Sentimen + Probabilitas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* SENTIMEN UTAMA */}
         <div className="p-6 border border-zinc-200/80 rounded-2xl bg-white shadow-sm min-h-[230px] flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-bold text-zinc-900">
@@ -135,7 +124,6 @@ export default function StrategySection({
           </div>
         </div>
 
-        {/* PROBABILITAS */}
         <div className="p-6 border border-zinc-200/80 rounded-2xl bg-white shadow-sm min-h-[230px]">
           <div>
             <h3 className="text-sm font-bold text-zinc-900">
@@ -196,17 +184,14 @@ export default function StrategySection({
         </div>
       </div>
 
-      {/* ===================================================== */}
-      {/* STRATEGI */}
-      {/* ===================================================== */}
-
+      {/* Strategi */}
       <form
         onSubmit={onGenerateIdeas}
         className="space-y-6"
       >
         <div className="space-y-2">
           <span className="text-[11px] font-bold tracking-widest text-teal-600 uppercase block">
-            — Decision Support System
+            — Rekomendasi Strategi
           </span>
 
           <h3 className="font-serif text-xl md:text-2xl tracking-tight text-zinc-900 font-extrabold">
@@ -282,13 +267,10 @@ export default function StrategySection({
           })}
         </div>
 
-        {/* =================================================== */}
-        {/* REASON */}
-        {/* =================================================== */}
-
+        {/* Alasan Rekomendasi */}
         <div className="rounded-2xl border border-teal-100 bg-teal-50/40 p-6">
           <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700">
-            Reason
+            Alasan Rekomendasi
           </span>
 
           <p className="text-sm text-zinc-600 leading-relaxed mt-2 max-w-3xl">
@@ -310,10 +292,7 @@ export default function StrategySection({
           )}
         </div>
 
-        {/* =================================================== */}
-        {/* GENERATE */}
-        {/* =================================================== */}
-
+        {/* Generate */}
         <div className="flex justify-center pt-2">
           <button
             type="submit"
@@ -323,17 +302,11 @@ export default function StrategySection({
             {isGenerating ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-
-                <span>
-                  Membuat Ide Konten...
-                </span>
+                <span>Membuat Ide Konten...</span>
               </>
             ) : (
               <>
-                <span>
-                  Generate Ide Konten
-                </span>
-
+                <span>Generate Ide Konten</span>
                 <span>→</span>
               </>
             )}

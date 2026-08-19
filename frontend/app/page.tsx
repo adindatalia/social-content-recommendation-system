@@ -4,11 +4,11 @@ import { useGenerator } from "@/context/ContentGeneratorContext";
 
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import InsightSection from "@/components/InsightSection";
 import SearchForm from "@/components/SearchForm";
 import Loading from "@/components/Loading";
 import StrategySection from "@/components/StrategySection";
 import IdeasSection from "@/components/IdeasSection";
-import PromptDetailSection from "@/components/PromptDetailSection";
 import Toast from "@/components/Toast";
 
 export default function Home() {
@@ -16,14 +16,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen antialiased bg-white text-zinc-900 font-sans">
-      {/* 1. Navbar */}
       <Navbar />
 
-      {/* 2. Hero */}
       <HeroSection />
 
-      <main className="max-w-5xl mx-auto px-6 space-y-20 pb-20">
-        {/* 3. Search form */}
+      <main className="max-w-5xl mx-auto px-6 pt-12 pb-4 space-y-10">
+        {/* Input topik dan komentar */}
         <SearchForm
           topic={gen.topic}
           setTopic={gen.setTopic}
@@ -34,12 +32,18 @@ export default function Home() {
           onSelectTopic={gen.selectTopicSuggestion}
         />
 
-        {/* 4. Loading saat proses analisis */}
+        {/* Proses analisis */}
         {gen.isAnalyzing && (
           <Loading loadingStep={0} />
         )}
 
-        {/* 6. Hasil analisis + strategi */}
+        {/* Informasi default sebelum analisis */}
+        {!gen.analysisResult &&
+          !gen.isAnalyzing && (
+            <InsightSection />
+          )}
+
+        {/* Hasil analisis dan strategi */}
         {gen.analysisResult &&
           !gen.isAnalyzing && (
             <StrategySection
@@ -53,43 +57,34 @@ export default function Home() {
             />
           )}
 
-        {/* 7. Loading generate */}
+        {/* Proses generate */}
         {gen.isGenerating && (
           <Loading
             loadingStep={gen.loadingStep}
           />
         )}
 
-        {/* 8. Hasil ide konten */}
+        {/* Hasil ide konten */}
         {gen.generatedResult &&
           !gen.isGenerating && (
-            <>
-              <IdeasSection
-                result={gen.generatedResult}
-                copiedId={gen.copiedId}
-                onCopy={gen.copyToClipboard}
-                onSave={(title) =>
-                  gen.addNotification(
-                    `Draf "${title}" berhasil disimpan ke sistem!`
-                  )
-                }
-                onReset={gen.resetGenerator}
-              />
-
-              <PromptDetailSection
-                result={gen.generatedResult}
-                copiedId={gen.copiedId}
-                onCopy={gen.copyToClipboard}
-              />
-            </>
+            <IdeasSection
+              result={gen.generatedResult}
+              copiedId={gen.copiedId}
+              onCopy={gen.copyToClipboard}
+              onSave={(title) =>
+                gen.addNotification(
+                  `Draf "${title}" berhasil disimpan ke sistem!`
+                )
+              }
+              onReset={gen.resetGenerator}
+            />
           )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-zinc-50 py-12 border-t border-zinc-200 text-center text-xs text-zinc-400">
+      <footer className="bg-zinc-50 py-8 border-t border-zinc-200 text-center text-xs text-zinc-400">
         <div className="max-w-5xl mx-auto space-y-2">
           <p className="font-bold text-zinc-700 text-sm">
-            🚀 SehatFlow Content Platform
+            SehatFlow Content
           </p>
 
           <p className="font-medium">
@@ -99,7 +94,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Toast */}
       <Toast notifications={gen.notifications} />
     </div>
   );

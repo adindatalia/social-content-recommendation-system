@@ -2,13 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import Navbar from "@/components/Navbar";
+
 import {
   fetchHistory,
   deleteHistoryItem,
   type HistoryRecord,
 } from "@/services/api";
+
 import { angleBadgeStyle } from "@/lib/mockData";
+
+function formatTimestamp(value?: string) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -17,6 +35,7 @@ export default function HistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+
   const [deletingId, setDeletingId] = useState<
     string | number | null
   >(null);
@@ -52,7 +71,9 @@ export default function HistoryPage() {
   // ============================================================
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return records;
+    if (!query.trim()) {
+      return records;
+    }
 
     const q = query.toLowerCase();
 
@@ -65,28 +86,12 @@ export default function HistoryPage() {
   }, [records, query]);
 
   // ============================================================
-  // STATISTICS
+  // SUMMARY
   // ============================================================
 
-  const totalReports = records.length;
+  const totalHistory = records.length;
 
-  const topAngle = useMemo(() => {
-    if (records.length === 0) return "-";
-
-    const counts: Record<string, number> = {};
-
-    for (const r of records) {
-      const key = r.angle || "Lainnya";
-
-      counts[key] = (counts[key] || 0) + 1;
-    }
-
-    return Object.entries(counts).sort(
-      (a, b) => b[1] - a[1]
-    )[0][0];
-  }, [records]);
-
-  const uniqueKeywords = useMemo(() => {
+  const uniqueTopics = useMemo(() => {
     return new Set(
       records
         .map((r) =>
@@ -94,6 +99,28 @@ export default function HistoryPage() {
         )
         .filter(Boolean)
     ).size;
+  }, [records]);
+
+  const topStrategy = useMemo(() => {
+    if (records.length === 0) {
+      return "—";
+    }
+
+    const counts: Record<string, number> = {};
+
+    for (const record of records) {
+      const strategy =
+        record.angle || "Lainnya";
+
+      counts[strategy] =
+        (counts[strategy] || 0) + 1;
+    }
+
+    return (
+      Object.entries(counts).sort(
+        (a, b) => b[1] - a[1]
+      )[0]?.[0] ?? "—"
+    );
   }, [records]);
 
   // ============================================================
@@ -119,7 +146,9 @@ export default function HistoryPage() {
       await deleteHistoryItem(id);
 
       setRecords((prev) =>
-        prev.filter((r) => r.id !== id)
+        prev.filter(
+          (record) => record.id !== id
+        )
       );
     } catch (err) {
       setError(
@@ -132,19 +161,12 @@ export default function HistoryPage() {
     }
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-10">
-        {/* ======================================================
-            HEADER
-        ====================================================== */}
-
+        {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <span className="text-[11px] font-bold tracking-widest text-teal-600 uppercase block">
@@ -156,14 +178,13 @@ export default function HistoryPage() {
             </h1>
 
             <p className="text-sm leading-relaxed text-zinc-500 max-w-lg font-medium">
-              Tinjau kembali seluruh riwayat analisis
-              sentimen dan ide konten yang pernah dibuat
-              sistem.
+              Tinjau kembali riwayat analisis
+              sentimen dan ide konten yang pernah
+              dibuat sistem.
             </p>
           </div>
 
           {/* Search */}
-
           <div className="relative">
             <svg
               className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
@@ -185,16 +206,13 @@ export default function HistoryPage() {
               onChange={(e) =>
                 setQuery(e.target.value)
               }
-              placeholder="Cari kata kunci..."
+              placeholder="Cari topik, sentimen, strategi..."
               className="pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:ring-1 focus:ring-teal-600 focus:border-teal-600 bg-zinc-50/50 text-sm font-medium transition w-64"
             />
           </div>
         </div>
 
-        {/* ======================================================
-            STAT CARDS
-        ====================================================== */}
-
+        {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-5 rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
@@ -202,35 +220,32 @@ export default function HistoryPage() {
             </span>
 
             <p className="text-3xl font-extrabold text-zinc-900 mt-1">
-              {totalReports}
+              {totalHistory}
             </p>
           </div>
 
           <div className="p-5 rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              Kata Kunci Unik
+              Topik Unik
             </span>
 
             <p className="text-3xl font-extrabold text-zinc-900 mt-1">
-              {uniqueKeywords}
+              {uniqueTopics}
             </p>
           </div>
 
           <div className="p-5 rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              Angle Terpopuler
+              Strategi Paling Sering Digunakan
             </span>
 
             <p className="text-lg font-extrabold text-teal-700 mt-2 leading-tight">
-              {topAngle}
+              {topStrategy}
             </p>
           </div>
         </div>
 
-        {/* ======================================================
-            TABLE
-        ====================================================== */}
-
+        {/* Table */}
         {isLoading ? (
           <div className="p-16 rounded-2xl border border-zinc-200 bg-white shadow-sm flex flex-col items-center justify-center gap-3">
             <span className="w-8 h-8 border-4 border-zinc-100 border-t-teal-600 rounded-full animate-spin" />
@@ -264,14 +279,10 @@ export default function HistoryPage() {
           <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                {/* ==================================================
-                    TABLE HEADER
-                ================================================== */}
-
                 <thead>
                   <tr className="bg-zinc-50 text-zinc-400 text-[10px] font-bold uppercase tracking-wider border-b border-zinc-200">
                     <th className="py-4 px-6">
-                      Kata Kunci
+                      Topik
                     </th>
 
                     <th className="py-4 px-6">
@@ -283,15 +294,11 @@ export default function HistoryPage() {
                     </th>
 
                     <th className="py-4 px-6">
-                      Angle
+                      Strategi
                     </th>
 
                     <th className="py-4 px-6">
-                      Periode
-                    </th>
-
-                    <th className="py-4 px-6">
-                      Tanggal Dibuat
+                      Waktu Dibuat
                     </th>
 
                     <th className="py-4 px-6 text-right">
@@ -300,24 +307,18 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
 
-                {/* ==================================================
-                    TABLE BODY
-                ================================================== */}
-
                 <tbody className="divide-y divide-zinc-100 text-xs">
                   {filtered.map((item) => (
                     <tr
                       key={item.id}
                       className="hover:bg-zinc-50/50 transition"
                     >
-                      {/* Keyword */}
-
+                      {/* Topic */}
                       <td className="py-4 px-6 font-bold text-zinc-800">
-                        {item.keyword}
+                        {item.keyword || "—"}
                       </td>
 
                       {/* Sentiment */}
-
                       <td className="py-4 px-6">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -327,7 +328,7 @@ export default function HistoryPage() {
                               : item.sentiment ===
                                 "Negatif"
                               ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-zinc-50 text-zinc-600 border-zinc-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
                           }`}
                         >
                           {item.sentiment || "—"}
@@ -335,7 +336,6 @@ export default function HistoryPage() {
                       </td>
 
                       {/* Confidence */}
-
                       <td className="py-4 px-6">
                         {typeof item.confidence ===
                         "number" ? (
@@ -371,8 +371,7 @@ export default function HistoryPage() {
                         )}
                       </td>
 
-                      {/* Angle */}
-
+                      {/* Strategy */}
                       <td className="py-4 px-6">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${angleBadgeStyle(
@@ -383,25 +382,21 @@ export default function HistoryPage() {
                         </span>
                       </td>
 
-                      {/* Periode */}
-
-                      <td className="py-4 px-6 text-zinc-500 font-semibold">
-                        {item.periode || "-"} Hari
-                      </td>
-
                       {/* Timestamp */}
-
-                      <td className="py-4 px-6 text-zinc-400 font-medium">
-                        {item.timestamp}
+                      <td className="py-4 px-6 text-zinc-500 font-medium whitespace-nowrap">
+                        {formatTimestamp(
+                          item.timestamp
+                        )}
                       </td>
 
                       {/* Actions */}
-
                       <td className="py-4 px-6">
                         <div className="flex justify-end items-center gap-2">
                           <button
                             onClick={() =>
-                              handleViewResult(item)
+                              handleViewResult(
+                                item
+                              )
                             }
                             className="text-[10px] px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
                           >
@@ -410,10 +405,13 @@ export default function HistoryPage() {
 
                           <button
                             onClick={() =>
-                              handleDelete(item.id)
+                              handleDelete(
+                                item.id
+                              )
                             }
                             disabled={
-                              deletingId === item.id
+                              deletingId ===
+                              item.id
                             }
                             aria-label="Hapus riwayat"
                             className="w-8 h-8 shrink-0 rounded-xl border border-zinc-200 hover:border-red-200 hover:bg-red-50 hover:text-red-600 text-zinc-400 flex items-center justify-center transition disabled:opacity-40 cursor-pointer"
@@ -448,19 +446,15 @@ export default function HistoryPage() {
         )}
       </main>
 
-      {/* ========================================================
-          FOOTER
-      ======================================================== */}
-
       <footer className="bg-zinc-50 py-12 border-t border-zinc-200 text-center text-xs text-zinc-400">
         <div className="max-w-5xl mx-auto space-y-2">
           <p className="font-bold text-zinc-700 text-sm">
-            🚀 SehatFlow Content Platform
+            SehatFlow Content
           </p>
 
           <p className="font-medium">
-            © 2026 SehatFlow Content. Hak Cipta Dilindungi
-            Undang-Undang.
+            © 2026 SehatFlow Content. Hak Cipta
+            Dilindungi Undang-Undang.
           </p>
         </div>
       </footer>

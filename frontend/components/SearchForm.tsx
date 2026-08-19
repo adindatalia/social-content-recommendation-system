@@ -32,7 +32,7 @@ export default function SearchForm({
         </span>
 
         <h2 className="font-serif text-2xl md:text-[2rem] tracking-tight text-zinc-900 font-extrabold">
-          Analisis Tren Topik Kesehatan
+          Analisis Sentimen Komentar Kesehatan
         </h2>
 
         <p className="mt-1 text-xs text-zinc-400">
@@ -48,7 +48,7 @@ export default function SearchForm({
             htmlFor="topic-input"
             className="block text-xs font-bold text-zinc-700 mb-2"
           >
-            Topic
+            Topik Kesehatan
           </label>
 
           <input
