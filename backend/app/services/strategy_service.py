@@ -27,10 +27,7 @@ STRATEGY_CONFIG = {
     },
 }
 
-
-# ============================================================
-# MAPPING SENTIMEN → STRATEGI
-# ============================================================
+# MAPPING SENTIMEN ke STRATEGI
 
 _SENTIMENT_TO_STRATEGY = {
     "Negatif": "address_pain_point",
@@ -39,9 +36,7 @@ _SENTIMENT_TO_STRATEGY = {
 }
 
 
-# ============================================================
 # NORMALISASI PILIHAN STRATEGI DARI FRONTEND
-# ============================================================
 
 _ALIAS_TO_KEY = {}
 
@@ -154,11 +149,6 @@ def _build_reasoning(
             f"sentimen {target_sentiment.lower()}."
         )
     ]
-
-
-# ============================================================
-# RESOLVE STRATEGY
-# ============================================================
 
 def resolve_strategy(
     sentiment: str,

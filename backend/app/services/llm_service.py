@@ -296,6 +296,13 @@ def generate_ideas(
             "LLM tidak menghasilkan ide"
         )
 
-    return _sanitize_ideas(
+    cleaned_ideas = _sanitize_ideas(
         ideas
     )
+
+    if len(cleaned_ideas) != 3:
+        raise ValueError(
+            "LLM harus menghasilkan tepat 3 ide"
+        )
+
+    return cleaned_ideas

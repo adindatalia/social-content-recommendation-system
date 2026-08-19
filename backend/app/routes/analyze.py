@@ -11,9 +11,7 @@ analyze_bp = Blueprint("analyze", __name__)
 def analyze():
     data = request.get_json(silent=True) or {}
 
-    # ============================================================
-    # 1. Ambil input
-    # ============================================================
+    # Ambil input
 
     topic = (data.get("topic") or "").strip()
     comment = (data.get("comment") or "").strip()
@@ -31,19 +29,7 @@ def analyze():
             "message": "Komentar wajib diisi"
         }), 400
 
-    # ============================================================
-    # 2. Analisis satu komentar dengan IndoBERTweet
-    #
-    # Input:
-    #   1 topik
-    #   1 komentar/opini
-    #
-    # Output:
-    #   sentiment
-    #   confidence
-    #   probabilities
-    #   method
-    # ============================================================
+    # Analisis satu komentar dengan IndoBERTweet
 
     try:
         analysis = analyze_comment(comment)
@@ -62,12 +48,9 @@ def analyze():
             "message": "Hasil sentimen tidak ditemukan"
         }), 500
 
-    # ============================================================
-    # 3. Tentukan strategi
-    #
+    # Tentukan strategi
     # Strategi ditentukan berdasarkan sentiment.
     # User tetap dapat memilih angle secara manual.
-    # ============================================================
 
     try:
         strategy = resolve_strategy(
@@ -81,10 +64,7 @@ def analyze():
             "message": str(e)
         }), 500
 
-    # ============================================================
-    # 4. Response
-    # ============================================================
-
+    # Response
     return jsonify({
         "topic": topic,
         "comment": comment,

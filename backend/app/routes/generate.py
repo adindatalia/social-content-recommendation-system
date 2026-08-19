@@ -248,8 +248,4 @@ def generate():
     except Exception:
         traceback.print_exc()
 
-    # ============================================================
-    # 8. RETURN RESPONSE
-    # ============================================================
-
     return jsonify(result)
